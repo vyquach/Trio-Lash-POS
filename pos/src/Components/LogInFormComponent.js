@@ -3,6 +3,7 @@ import {Row, Col, Media, Form, FormGroup, Label, Input, Button, Alert} from 'rea
 import image from '../images/LogIn_Image.jpg'
 import '../styling/style.css';
 import {useAuth} from '../Context/AuthContext'
+import { useHistory } from 'react-router-dom';
 
 export default function LogInFormComponent() {
 
@@ -10,11 +11,13 @@ export default function LogInFormComponent() {
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const { logIn } = useAuth()
+    const history = useHistory()
     
     async function ButtonHandler(e){
         e.preventDefault()
         try {
              await logIn(username, password)
+             history.push("/home")
         } catch {
             setErrorMessage('Invalid username or password. Please try again.')
         }
