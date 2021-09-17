@@ -32,13 +32,13 @@
 
 .sidebar {
     height: 100vh;
-    width: 300px;
+    width: 90%;
     background-color: #2F4060;
     padding-top: 10%;
 }
 
 .sidebarList {
-     height: auto;
+     height: 100%;
      width: 100%;
      padding: 0;
 }
@@ -69,4 +69,18 @@
 
 .row #title {
     flex: 70%;
+}
+
+.contentArea {
+    height: fit-content;
+    width: 75%;
+    background-color: white;
+    padding: 5%;
+    padding-right: 20%;
+    word-break:normal;
+    color: white;
+    font-weight: bold;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    position: absolute;
+    left: 35%;
 }

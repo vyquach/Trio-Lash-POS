@@ -4,24 +4,18 @@ import {BrowserRouter, Route} from 'react-router-dom'
 import LogInPage from './Pages/LogIn.js'
 import Home from './Pages/Home.js'
 import { AuthProvider} from './Context/AuthContext'
+import PrivateRoute from './Components/PrivateRoute';
+
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
       <div className='App'>
-        <Route path={['/']} exact render={() => {
-          return(
-            <LogInPage></LogInPage>
-          )
-        }}/>
+        <Route exact path={['/']} component={LogInPage}></Route>
       </div>
       <div className='App'>
-        <Route path={['/home']} exact render={() => {
-          return(
-            <Home></Home>
-          )
-        }}/>
+        <PrivateRoute exact path={['/home']} component={Home}></PrivateRoute>
       </div>
       </BrowserRouter>
     </AuthProvider>

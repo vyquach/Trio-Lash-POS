@@ -1,30 +1,15 @@
-import React, { Component } from 'react';
+import React from 'react';
 import LogInFormComponent from '../Components/LogInFormComponent';
 
-export class LogIn extends Component {
+export default function LogIn() {
 
-    constructor(props){
-        super(props)
-        this.state = {
+    document.title = "Log In | Trio Lashes"
 
-        }
-        this.logIn_Redirect = this.logIn_Redirect.bind(this);
-        document.title = "Log In | Trio Lashes"
-    }
-
-    logIn_Redirect(userName, password){
-        console.log(this.state.userName)
-    }
-
-    render() {
-        return (
-            <React.Fragment>
-                <div className="padding5">
-                    <LogInFormComponent userName={this.state.userName} password={this.state.password} logIn_Redirect={this.logIn_Redirect}></LogInFormComponent>
-                </div>
-            </React.Fragment>
-        );
-    }
+    return (
+        <React.Fragment>
+            <div className="padding5">
+                <LogInFormComponent></LogInFormComponent>
+            </div>
+        </React.Fragment>
+    )
 }
-
-export default LogIn
