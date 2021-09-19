@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState} from 'react'
 import DashboardOutlinedIcon from '@material-ui/icons/DashboardOutlined';
 import StorefrontOutlinedIcon from '@material-ui/icons/StorefrontOutlined';
 import LocalGroceryStoreOutlinedIcon from '@material-ui/icons/LocalGroceryStoreOutlined';
@@ -6,27 +6,21 @@ import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined';
 import InsertChartOutlinedTwoToneIcon from '@material-ui/icons/InsertChartOutlinedTwoTone';
 import {useAuth} from '../Context/AuthContext'
 import { useHistory } from 'react-router-dom';
-import { Col, Container, Row } from 'reactstrap';
+import { Col, Row } from 'reactstrap';
 import ViewInventoryComponent from '../Components/ViewInventoryComponent';
-import { db } from '../firebase'
+import UpdateInventoryComponent from '../Components/UpdateInventoryComponent';
 
 export default function Home() {
 
     const { logOut } = useAuth()
     const { history } = useHistory()
-    const [products, setProducts] = useState([])
+    const [dashBoard, setDashboard] = useState(true)
+    const [viewInventory, setViewInventory] = useState(false)
+    const [updateInventory, setUpdateInventory] = useState(false)
+    const [checkout, setCheckout] = useState(false)
+
 
     document.title = "Home | Trio Lashes"
-
-    useEffect(() => {
-        db.collection('Inventory').where('name', '!=', null)
-        .get()
-        .then((querySnapshot) => {
-            querySnapshot.forEach((doc) => {
-            setProducts(products =>[...products, doc.data()])
-            })
-        })
-    }, [])
     
     async function handleLogOut(e){
         e.preventDefault()
@@ -37,16 +31,28 @@ export default function Home() {
         }
     }
     function handleDashboard(){
-        alert('hello')
+        setDashboard(true)
+        setViewInventory(false)
+        setUpdateInventory(false)
+        setCheckout(false)
     }
     function handleViewInventory(){
-        alert('xin chao')
+        setDashboard(false)
+        setViewInventory(true)
+        setUpdateInventory(false)
+        setCheckout(false)
     }
     function handleUpdateInventory(){
-        alert('ola')
+        setDashboard(false)
+        setViewInventory(false)
+        setUpdateInventory(true)
+        setCheckout(false)
     }
     function handleCheckout(){
-        alert('money')
+        setDashboard(false)
+        setViewInventory(false)
+        setUpdateInventory(false)
+        setCheckout(true)
     }
 
     return (
@@ -77,9 +83,12 @@ export default function Home() {
                     </ul>
                 </div>
             </Col>
-            <Col xs='auto' fluid='sm'>
-                <div className='contentArea'>
-                    <ViewInventoryComponent products={products}/>
+            <Col className='contentArea'>
+                <div>
+                    {dashBoard && <div>DASHBOARD</div>}
+                    {viewInventory && <ViewInventoryComponent/>}
+                    {updateInventory && <UpdateInventoryComponent></UpdateInventoryComponent>}
+                    {checkout && <div>CHECK OUT</div>}
                 </div>
             </Col>
         </Row>

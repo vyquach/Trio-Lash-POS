@@ -16,10 +16,15 @@ export default function LogInFormComponent() {
     async function ButtonHandler(e){
         e.preventDefault()
         try {
-             await logIn(username, password)
-             history.push("/home")
+            if(username.length !== 0 && password.length !== 0){
+                await logIn(username, password)
+                history.push("/home")
+            }
+            else{
+                setErrorMessage('Please provide username and password.')
+            }
         } catch {
-            setErrorMessage('Invalid username or password. Please try again.')
+            setErrorMessage('Username and password you entered is incorrect. Please try again.')
         }
     }
 
@@ -31,7 +36,6 @@ export default function LogInFormComponent() {
         setPassword(event.target.value);
     }
     return (
-        
         <div>
             <Row>
                 <Col xs='6'>
