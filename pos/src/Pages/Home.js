@@ -7,8 +7,8 @@ import InsertChartOutlinedTwoToneIcon from '@material-ui/icons/InsertChartOutlin
 import {useAuth} from '../Context/AuthContext'
 import { useHistory } from 'react-router-dom';
 import { Col, Row } from 'reactstrap';
-import ViewInventoryComponent from '../Components/ViewInventoryComponent';
-import UpdateInventoryComponent from '../Components/UpdateInventoryComponent';
+import AddProductsComponent from '../Components/AddProductsComponent';
+import UpdateExistingProducts from '../Components/UpdateExistingProducts';
 
 export default function Home() {
 
@@ -66,11 +66,11 @@ export default function Home() {
                         </li>
                         <li key={'viewInventory'} className='row' onClick={handleViewInventory}>
                             <div id='icon'><StorefrontOutlinedIcon/></div>
-                            <div id='title'>VIEW INVENTORY</div>
+                            <div id='title'>UPDATE INVENTORY</div>
                         </li>
                         <li key={'updateInventory'} className='row' onClick={handleUpdateInventory}>
                             <div id='icon'><InsertChartOutlinedTwoToneIcon/></div>
-                            <div id='title'>UPDATE INVENTORY</div>
+                            <div id='title'>ADD NEW PRODUCT(S)</div>
                         </li>
                         <li key={'checkout'} className='row' onClick={handleCheckout}>
                             <div id='icon'><LocalGroceryStoreOutlinedIcon/></div>
@@ -86,8 +86,8 @@ export default function Home() {
             <Col className='contentArea'>
                 <div>
                     {dashBoard && <div>DASHBOARD</div>}
-                    {viewInventory && <ViewInventoryComponent/>}
-                    {updateInventory && <UpdateInventoryComponent></UpdateInventoryComponent>}
+                    {viewInventory && <UpdateExistingProducts/>}
+                    {updateInventory && <AddProductsComponent/>}
                     {checkout && <div>CHECK OUT</div>}
                 </div>
             </Col>

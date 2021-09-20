@@ -37,18 +37,24 @@ export default function AddProductsComponent() {
         }
     }))
     const classes = useStyles()
-    const handleChangeInput = (index, event) => {
+    const handleChangeInput = (index, event, type) => {
         const values = [...newProducts];
-        values[index][event.target.name] =  event.target.value
+        if(type === 'quantity' || type === 'price'){
+            values[index][event.target.name] =  Number(event.target.value)
+        }
+        else{
+            values[index][event.target.name] =  event.target.value
+        }
         setNewProducts(values)
     }
     const validateInput = () => {
         var isValid = true
         newProducts.map((newProduct) =>{
             newProduct.code = newProduct.code.trim()
-            if(Number(newProduct.price) <= 0 || Number(newProduct.quantity) <= 0) {
+            if(Number(newProduct.price) <= 0 || Number(newProduct.quantity) <= 0 || ((Number(newProduct.quantity) - Math.floor(Number(newProduct.quantity))) !== 0) || newProduct.name.trim().length <= 0) {
                 isValid = false
             }
+            return isValid
         })
         return isValid
     }
@@ -66,7 +72,9 @@ export default function AddProductsComponent() {
                 if(newProduct.code.trim() === product.code){
                     mess += ' ' + newProduct.code
                 }
+                return mess
             })
+            return mess
         })
         if(mess.trim().length > 0){
             setErrorMessage(mess + ' already exist(s) in the inventory. Please use unique code(s).')
@@ -79,9 +87,10 @@ export default function AddProductsComponent() {
                     resetNewProducts()
                     setErrorMessage('')
                     setIsSuccessful(true)
-                }) .catch((error) => {
+                }).catch((error) => {
                     setErrorMessage('Unable to update. Please try again.')
                 })
+                return mess
             })
         }
         else {
@@ -93,8 +102,11 @@ export default function AddProductsComponent() {
     }
     const handleRemoveFields = (index) => {
         if(newProducts.length > 1){
-            const newList = [...newProducts];
+            var newList = [...newProducts];
             newList.splice(index, 1)
+            if(newList.length <= 0){
+                newList = [...newList, {code: ' ', name: ' ', description: '', price: 0.0, quantity: 0}]
+            }
             setNewProducts(newList);
         }
     }
@@ -112,8 +124,8 @@ export default function AddProductsComponent() {
                                 value={newProduct.code}
                                 required={true}
                                 style ={{width: '8%'}}
-                                onChange={event => handleChangeInput(index, event)}
-                                error={(typeof newProduct.code) !== 'string' || newProduct.code.length <= 0}
+                                onChange={event => handleChangeInput(index, event, 'code')}
+                                error={(typeof newProduct.code) !== 'string' || newProduct.code.trim().length <= 0}
                             />
                             <TextField
                                 name='name'
@@ -122,8 +134,8 @@ export default function AddProductsComponent() {
                                 value={newProduct.name}
                                 required={true}
                                 style ={{width: '15%'}}
-                                onChange={event => handleChangeInput(index, event)}
-                                error={(typeof newProduct.name) !== 'string' || newProduct.name.length <= 0}
+                                onChange={event => handleChangeInput(index, event, 'name')}
+                                error={(typeof newProduct.name) !== 'string' || newProduct.name.trim().length <= 0}
                             />
                             <TextField
                                 name='description'
@@ -132,7 +144,7 @@ export default function AddProductsComponent() {
                                 value={newProduct.description}
                                 multiline={true}
                                 style ={{width: '25%'}}
-                                onChange={event => handleChangeInput(index, event)}
+                                onChange={event => handleChangeInput(index, event, 'description')}
                             />
                             <TextField
                                 name='price'
@@ -142,7 +154,7 @@ export default function AddProductsComponent() {
                                 value={newProduct.price}
                                 required={true}
                                 style = {{width: '8%'}}
-                                onChange={event => handleChangeInput(index, event)}
+                                onChange={event => handleChangeInput(index, event, 'price')}
                                 error={Number(newProduct.price) <= 0}
                             />
                             <TextField
@@ -153,8 +165,8 @@ export default function AddProductsComponent() {
                                 value={newProduct.quantity}
                                 required={true}
                                 style = {{width: '8%'}}
-                                onChange={event => handleChangeInput(index, event)}
-                                error={Number(newProduct.quantity) <= 0}
+                                onChange={event => handleChangeInput(index, event, 'quantity')}
+                                error={Number(newProduct.quantity) <= 0 || ((Number(newProduct.quantity) - Math.floor(Number(newProduct.quantity))) !== 0)}
                             />
                             <IconButton onClick={() => handleRemoveFields(index)}>
                                 <RemoveIcon></RemoveIcon>
@@ -165,7 +177,7 @@ export default function AddProductsComponent() {
                         </div>
                     ))}
                 </form>
-                <Button variant='contained' color='primary' type='submit' onClick={handleSubmit}>UPDATE</Button>
+                <Button variant='contained' color='default' type='submit' onClick={handleSubmit}>UPDATE</Button>
             </Container>
         )
     }
