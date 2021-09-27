@@ -1,5 +1,4 @@
 import React, { useState} from 'react'
-import DashboardOutlinedIcon from '@material-ui/icons/DashboardOutlined';
 import StorefrontOutlinedIcon from '@material-ui/icons/StorefrontOutlined';
 import LocalGroceryStoreOutlinedIcon from '@material-ui/icons/LocalGroceryStoreOutlined';
 import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined';
@@ -9,13 +8,13 @@ import { useHistory } from 'react-router-dom';
 import { Col, Row } from 'reactstrap';
 import AddProductsComponent from '../Components/AddProductsComponent';
 import UpdateExistingProducts from '../Components/UpdateExistingProducts';
+import CheckoutComponent from '../Components/CheckoutComponent';
 
 export default function Home() {
 
     const { logOut } = useAuth()
     const { history } = useHistory()
-    const [dashBoard, setDashboard] = useState(true)
-    const [viewInventory, setViewInventory] = useState(false)
+    const [viewInventory, setViewInventory] = useState(true)
     const [updateInventory, setUpdateInventory] = useState(false)
     const [checkout, setCheckout] = useState(false)
 
@@ -30,26 +29,17 @@ export default function Home() {
         } catch {
         }
     }
-    function handleDashboard(){
-        setDashboard(true)
-        setViewInventory(false)
-        setUpdateInventory(false)
-        setCheckout(false)
-    }
     function handleViewInventory(){
-        setDashboard(false)
         setViewInventory(true)
         setUpdateInventory(false)
         setCheckout(false)
     }
     function handleUpdateInventory(){
-        setDashboard(false)
         setViewInventory(false)
         setUpdateInventory(true)
         setCheckout(false)
     }
     function handleCheckout(){
-        setDashboard(false)
         setViewInventory(false)
         setUpdateInventory(false)
         setCheckout(true)
@@ -57,38 +47,45 @@ export default function Home() {
 
     return (
         <Row>
-            <Col xs='4' sm='4'>
+            <Col xs='4'>
                 <div className='sidebar'>
                     <ul className='sidebarList'>
-                        <li key={'dashboard'} className='row' onClick={handleDashboard}>
-                            <div id='icon'><DashboardOutlinedIcon/></div>
-                            <div id='title'>DASHBOARD</div>
-                        </li>
-                        <li key={'viewInventory'} className='row' onClick={handleViewInventory}>
+                        {viewInventory ? <li id={'viewInventory'} className='row' onClick={handleViewInventory}>
                             <div id='icon'><StorefrontOutlinedIcon/></div>
                             <div id='title'>UPDATE INVENTORY</div>
-                        </li>
-                        <li key={'updateInventory'} className='row' onClick={handleUpdateInventory}>
+                        </li> : 
+                        <li className='row' onClick={handleViewInventory}>
+                            <div id='icon'><StorefrontOutlinedIcon/></div>
+                            <div id='title'>UPDATE INVENTORY</div>
+                        </li>}
+                        {updateInventory ? <li id={'updateInventory'} className='row' onClick={handleUpdateInventory}>
                             <div id='icon'><InsertChartOutlinedTwoToneIcon/></div>
                             <div id='title'>ADD NEW PRODUCT(S)</div>
-                        </li>
-                        <li key={'checkout'} className='row' onClick={handleCheckout}>
+                        </li> :
+                        <li className='row' onClick={handleUpdateInventory}>
+                            <div id='icon'><InsertChartOutlinedTwoToneIcon/></div>
+                            <div id='title'>ADD NEW PRODUCT(S)</div>
+                        </li>}
+                        {checkout ? <li id={'checkout'} className='row' onClick={handleCheckout}>
                             <div id='icon'><LocalGroceryStoreOutlinedIcon/></div>
                             <div id='title'>CHECK OUT</div>
-                        </li>
-                        <li key={'logout'} className='row' onClick={handleLogOut}>
+                        </li> :
+                        <li className='row' onClick={handleCheckout}>
+                            <div id='icon'><LocalGroceryStoreOutlinedIcon/></div>
+                            <div id='title'>CHECK OUT</div>
+                        </li>}
+                        <li id={'logout'} className='row' onClick={handleLogOut}>
                             <div id='icon'><ExitToAppOutlinedIcon/></div>
                             <div id='title'>LOGOUT</div>
                         </li>
                     </ul>
                 </div>
             </Col>
-            <Col className='contentArea'>
+            <Col xs='8' sm='8' className='contentArea'>
                 <div>
-                    {dashBoard && <div>DASHBOARD</div>}
                     {viewInventory && <UpdateExistingProducts/>}
                     {updateInventory && <AddProductsComponent/>}
-                    {checkout && <div>CHECK OUT</div>}
+                    {checkout && <div><CheckoutComponent/></div>}
                 </div>
             </Col>
         </Row>

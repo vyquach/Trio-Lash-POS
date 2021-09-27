@@ -3,22 +3,25 @@
 }
 
 .form {
-    padding-top: 10%;
-    padding-bottom: 10%;
-    
+    margin: auto;
+    width: 50%;
+    padding: 8%;
+    padding-top: 1%;
+    text-align: center;
 }
+
 .paragraph1 {
     font-size: 45px;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva', 'Verdana', 'sansserif';
     text-align: center;
-    font-weight: bold;
     padding: 3%;
 }
 
 .text1 {
     font-size: 18px;
     text-align: left;
-    padding: 3%;
+    padding: 2%;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva', 'Verdana', 'sansserif';
 }
 
 .image {
@@ -27,14 +30,16 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    padding: 2%;
+    padding-bottom: 2%;
+    background-color: transparent;
 }
 
 .sidebar {
     height: 100vh;
-    width: 60%;
-    background-color: #292929;
+    width: 26%;
+    background-color: #19181A;
     padding-top: 10%;
+    position: fixed;
 }
 
 .sidebarList {
@@ -50,7 +55,7 @@
     margin: 0%;
     display: flex;
     flex-direction: row;
-    color: white;
+    color:  white;
     justify-content: center;
     align-items: center;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
@@ -71,17 +76,20 @@
     flex: 70%;
 }
 
+#viewInventory, #updateInventory, #checkout {
+    background-color: #616161; 
+}
+
 .contentArea {
-    max-width: 600px;
-    height: max-content;
-    background-color: white;
-    padding: 3%;
+    max-width: max-content;
+    max-height: max-content;
+    background-color: transparent;
     word-break:normal;
     font-weight: bold;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     position: absolute;
     color: white;
-    left: 20%;
+    left: 33%;
 }
 
 .errorMessage {
@@ -96,4 +104,9 @@
     color: green;
     font-weight: bolder;
     font-style: italic;
+}
+
+.buttonGroup {
+    padding: 5%;
+    text-align: center;
 }

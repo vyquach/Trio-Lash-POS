@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import {Row, Col, Media, Form, FormGroup, Label, Input, Button, Alert} from 'reactstrap'
-import image from '../images/LogIn_Image.jpg'
+import {Form, FormGroup, Label, Input, Alert, Media} from 'reactstrap'
+import image from '../images/Trio-Lash-Logo.png'
 import '../styling/style.css';
 import {useAuth} from '../Context/AuthContext'
 import { useHistory } from 'react-router-dom';
+import { Button } from '@material-ui/core'
 
 export default function LogInFormComponent() {
 
@@ -37,30 +38,21 @@ export default function LogInFormComponent() {
     }
     return (
         <div>
-            <Row>
-                <Col xs='6'>
-                    <div className='form'>
-                        <Label className='paragraph1'>Welcome to Trio Lashes</Label>    
-                        {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}                        
-                        <Form>
-                            <FormGroup className='text1'>
-                                <Label>Username</Label>
-                                <Input className='w-75' value={username} type='email' onChange={handleUsernameChange}></Input>
-                            </FormGroup>
-                            <FormGroup className='text1'>
-                                <Label>Password</Label>
-                                <Input className='w-75' value={password} type='password' onChange={handlePasswordChange}></Input>
-                            </FormGroup>
-                        </Form>
-                    </div>
-                    <div>
-                        <br></br><Button color='primary' onClick={ButtonHandler}>Sign In</Button>
-                    </div>
-                    </Col>
-                <Col xs='6'>
-                    <Media className='image' object src={image} alt='affordable lash supplies 1'></Media>
-                </Col>
-            </Row>
+            <div className='form'>
+                <Media className='image' object src={image} alt='Trio-Lash-Logo'></Media>
+                {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}                        
+                <Form>
+                    <FormGroup className='text1'>
+                        <Label className='padding5'>Username</Label>
+                        <Input value={username} type='email' onChange={handleUsernameChange}></Input>
+                    </FormGroup>
+                    <FormGroup className='text1'>
+                        <Label className='padding5'>Password</Label>
+                        <Input value={password} type='password' onChange={handlePasswordChange}></Input>
+                    </FormGroup>
+                    <br/><Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={ButtonHandler}>SIGN IN</Button>
+                </Form>
+            </div>
         </div>
     );
 }

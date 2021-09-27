@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Container from '@material-ui/core/Container'
 import { Button, TextField } from '@material-ui/core'
+import { Alert } from 'reactstrap'
 import { makeStyles } from '@material-ui/core'
 import { IconButton } from '@material-ui/core'
 import RemoveIcon from '@material-ui/icons/Remove'
@@ -11,7 +12,6 @@ export default function AddProductsComponent() {
     const [isComplete, setIsComplete] = useState(false)
     const [products, setProducts] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
-    const [isSuccessful, setIsSuccessful] = useState(false)
     const getCurrentInventory = () => {
         db.collection('Inventory').where('name', '!=', null)
         .get()
@@ -26,7 +26,7 @@ export default function AddProductsComponent() {
         getCurrentInventory()
     }, [])
     const [newProducts, setNewProducts] = useState([
-        {code: ' ', name: ' ', description: '', price: 0.0, quantity: 0},
+        {code: '', name: '', description: '', price: 0.0, quantity: 0},
     ])
     const useStyles = makeStyles((theme) =>({
         root: {
@@ -49,7 +49,7 @@ export default function AddProductsComponent() {
     }
     const validateInput = () => {
         var isValid = true
-        newProducts.map((newProduct) =>{
+        newProducts.forEach((newProduct) =>{
             newProduct.code = newProduct.code.trim()
             if(Number(newProduct.price) <= 0 || Number(newProduct.quantity) <= 0 || ((Number(newProduct.quantity) - Math.floor(Number(newProduct.quantity))) !== 0) || newProduct.name.trim().length <= 0) {
                 isValid = false
@@ -64,7 +64,6 @@ export default function AddProductsComponent() {
         ])
     }
     const handleSubmit = (e) => {
-        setIsSuccessful(false)
         e.preventDefault()
         var mess = ''
         newProducts.map((newProduct, index) => {
@@ -86,7 +85,6 @@ export default function AddProductsComponent() {
                     getCurrentInventory()
                     resetNewProducts()
                     setErrorMessage('')
-                    setIsSuccessful(true)
                 }).catch((error) => {
                     setErrorMessage('Unable to update. Please try again.')
                 })
@@ -98,29 +96,29 @@ export default function AddProductsComponent() {
         }
     }
     const handleAddFields = () => {
-        setNewProducts([...newProducts, {code: ' ', name: ' ', description: '', price: 0.0, quantity: 0}])
+        setNewProducts([...newProducts, {code: '', name: '', description: '', price: 0.0, quantity: 0}])
     }
     const handleRemoveFields = (index) => {
         if(newProducts.length > 1){
             var newList = [...newProducts];
             newList.splice(index, 1)
             if(newList.length <= 0){
-                newList = [...newList, {code: ' ', name: ' ', description: '', price: 0.0, quantity: 0}]
+                newList = [...newList, {code: '', name: '', description: '', price: 0.0, quantity: 0}]
             }
             setNewProducts(newList);
         }
     }
     if(isComplete){
         return (
-            <Container>
-                {isSuccessful ? <p className='successfulMessage'>Successfully updated the inventory.</p> : <p className='errorMessage'>{errorMessage}</p>}
+            <Container style={{paddingTop: '2%', paddingBottom: '2%'}}>
+                {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
                 <form className={classes.root}>
                     { newProducts.map((newProduct, index) => (
                         <div key={index}>
                                 <TextField
+                                variant='standard'
                                 name='code'
                                 label='Code'
-                                variant='filled'
                                 value={newProduct.code}
                                 required={true}
                                 style ={{width: '8%'}}
@@ -128,9 +126,9 @@ export default function AddProductsComponent() {
                                 error={(typeof newProduct.code) !== 'string' || newProduct.code.trim().length <= 0}
                             />
                             <TextField
+                                variant='standard'
                                 name='name'
                                 label='Name'
-                                variant='filled'
                                 value={newProduct.name}
                                 required={true}
                                 style ={{width: '15%'}}
@@ -138,18 +136,18 @@ export default function AddProductsComponent() {
                                 error={(typeof newProduct.name) !== 'string' || newProduct.name.trim().length <= 0}
                             />
                             <TextField
+                                variant='standard'                            
                                 name='description'
                                 label='Description'
-                                variant='filled'
                                 value={newProduct.description}
                                 multiline={true}
                                 style ={{width: '25%'}}
                                 onChange={event => handleChangeInput(index, event, 'description')}
                             />
                             <TextField
+                                variant='standard'
                                 name='price'
                                 label='Price'
-                                variant='filled'
                                 type='number'
                                 value={newProduct.price}
                                 required={true}
@@ -158,9 +156,9 @@ export default function AddProductsComponent() {
                                 error={Number(newProduct.price) <= 0}
                             />
                             <TextField
+                                variant='standard'
                                 name='quantity'
                                 label='Quantity'
-                                variant='filled'
                                 type='number'
                                 value={newProduct.quantity}
                                 required={true}
@@ -177,7 +175,7 @@ export default function AddProductsComponent() {
                         </div>
                     ))}
                 </form>
-                <Button variant='contained' color='default' type='submit' onClick={handleSubmit}>UPDATE</Button>
+                <br/><Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>ADD</Button>
             </Container>
         )
     }
