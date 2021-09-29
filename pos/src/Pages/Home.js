@@ -19,7 +19,7 @@ export default function Home() {
     const [checkout, setCheckout] = useState(false)
 
 
-    document.title = "Home | Trio Lashes"
+    document.title = "Home | Trio Lash"
     
     async function handleLogOut(e){
         e.preventDefault()
@@ -47,7 +47,7 @@ export default function Home() {
 
     return (
         <Row>
-            <Col xs='4'>
+            <Col xs='4' sm='4'>
                 <div className='sidebar'>
                     <ul className='sidebarList'>
                         {viewInventory ? <li id={'viewInventory'} className='row' onClick={handleViewInventory}>

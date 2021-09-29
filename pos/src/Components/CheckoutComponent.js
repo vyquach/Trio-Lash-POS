@@ -109,7 +109,7 @@ export default function CheckoutComponent() {
             })
         }
     }
-    const handleCheckout = () => {
+    const checkoutHelper = () => {
         setErrorMessage('')
         if(checkoutItems.length > 0){
             checkoutItems.forEach((item) => {
@@ -148,7 +148,7 @@ export default function CheckoutComponent() {
                 list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, total: (item.price * item.quantity)})
                 total += item.price * item.quantity
             })
-            handleCheckout()
+            checkoutHelper()
             var orderObj = {orderNum: orderNum, date: orderDate, location: 'South Philly', tax: tax, total: Math.round(((total + ((tax/100) * total) + Number.EPSILON) * 100)) / 100, order: list}
             setIsComplete(false)
             db.collection('Orders').doc(String(orderNum)).set(orderObj)
@@ -233,11 +233,10 @@ export default function CheckoutComponent() {
                         })
                      }}
                      options={{
-                         actionsColumnIndex:-1, addRowPosition:'first', pageSize:8, pageSizeOptions:[8, 15, 20, 30], search: false
+                         actionsColumnIndex:-1, addRowPosition:'first', pageSize:10, pageSizeOptions:[10, 15, 20, 30], search: false
                      }}
                      />
                      <Row className='buttonGroup'>
-                         <Col><Button variant='outlined' onClick={handleCheckout}>CHECK OUT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleCheckoutAndPrint}>CHECK OUT AND PRINT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleClear}>CLEAR</Button></Col>
                      </Row>

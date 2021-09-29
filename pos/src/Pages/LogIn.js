@@ -3,7 +3,7 @@ import LogInFormComponent from '../Components/LogInFormComponent';
 
 export default function LogIn() {
 
-    document.title = "Log In | Trio Lashes"
+    document.title = "Log In | Trio Lash"
 
     return (
         <React.Fragment>

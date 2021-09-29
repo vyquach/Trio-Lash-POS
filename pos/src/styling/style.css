@@ -92,20 +92,6 @@
     left: 33%;
 }
 
-.errorMessage {
-    padding: 2%;
-    color: red;
-    font-weight: bolder;
-    font-style: italic;
-}
-
-.successfulMessage {
-    padding: 2%;
-    color: green;
-    font-weight: bolder;
-    font-style: italic;
-}
-
 .buttonGroup {
     padding: 5%;
     text-align: center;
