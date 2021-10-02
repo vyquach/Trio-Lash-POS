@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import BarcodeReader from 'react-barcode-reader'
 import MaterialTable from 'material-table'
 import { db } from '../firebase'
-import { Button } from '@material-ui/core'
+import { Button, MenuItem, TextField } from '@material-ui/core'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import image from '../images/Trio-Lash-Logo-Receipt.png'
@@ -10,18 +10,20 @@ import '../styling/BonheurRoyale-Regular-normal'
 import '../styling/OpenSansCondensed-Light-normal'
 import '../styling/OpenSansCondensed-Bold-normal'
 import { Col, Row, Alert } from 'reactstrap'
+import { makeStyles } from '@material-ui/core'
 
 export default function CheckoutComponent() {
     const [isComplete, setIsComplete] = useState(false)
     const [products, setProducts] = useState([])
     const [checkoutItems, setCheckoutItems] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
+    const [shippingMethod, setShippingMethod] = useState('In-person')
     const columns = [
         {title: 'Code', field: 'code', editable: false},
         {title: 'Name', field: 'name', editable: false},
         {title: 'Description', field: 'description', editable: false},
         {title: 'Price', field: 'price'},
-        {title: 'Quantity', field: 'quantity'}
+        {title: 'Quantity', field: 'quantity'},
     ]
     const getCurrentInventory = () => {
         setProducts([])
@@ -38,6 +40,15 @@ export default function CheckoutComponent() {
     useEffect(() => {
         getCurrentInventory()
     }, []) 
+    const useStyles = makeStyles((theme) =>({
+        root: {
+            '& .MuiTextField-root': {
+                margin: theme.spacing(3),
+                color: 'white'
+            }
+        }
+    }))
+    const classes = useStyles()
     const handleBarcode = (data) => {
         setErrorMessage('')
         var seen = false
@@ -136,6 +147,9 @@ export default function CheckoutComponent() {
         setCheckoutItems([])
         setErrorMessage('')
     }
+    const handleShippingChange = (event) => {
+        setShippingMethod(event.target.value)
+    }
     const handleCheckoutAndPrint = () => {
         if(checkoutItems.length > 0){
             var total = 0
@@ -201,14 +215,51 @@ export default function CheckoutComponent() {
         }
     }   
     if(isComplete){
+        console.log(shippingMethod)
         return (
-            <div style={{maxWidth: '90%', paddingTop: '2%', paddingBottom: '2%'}}>
-                {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
+            <div style={{position:'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <BarcodeReader minLength={4} onScan={handleBarcode} onError={handleError}></BarcodeReader>
+                {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
+                <h1 style={{padding: '3%', fontWeight: 'bolder'}}>ORDER INFO</h1>
+                <form className={classes.root}>
+                <TextField
+                    variant='standard'
+                    name='firstName'
+                    label='First Name'
+                    value=''
+                    style ={{width: '18%'}}
+                />
+                <TextField
+                    variant='standard'
+                    name='lastName'
+                    label='Last Name'
+                    value=''
+                    style ={{width: '18%'}}
+                /><br/>
+                <TextField
+                    variant='standard'
+                    name='coupon'
+                    label='Coupon'
+                    value=''
+                    style ={{width: '18%'}}
+                />
+                <TextField
+                    id='standard-select-currency'
+                    select
+                    label='Shipping Method'
+                    value={shippingMethod}
+                    style = {{width: '35%'}}
+                    variant='standard'
+                    onChange={handleShippingChange}>
+                    <MenuItem key='In-person' value='In-person'>In-person (same day pickup)</MenuItem>
+                    <MenuItem key='Next-day' value='Next-day'>Next-day pickup</MenuItem>
+                    <MenuItem key='UPSP/UPS' value='USPS/UPS'>USPS/UPS Shipping</MenuItem>
+                </TextField>
+                </form>
                 <MaterialTable
                      columns={columns} 
                      data={checkoutItems} 
-                     title='CART'
+                     title=''
                      editable={{
                         onRowDelete:selectedRow => new Promise((resolve, reject) => {
                             const index = selectedRow.tableData.id

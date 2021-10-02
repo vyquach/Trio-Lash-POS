@@ -36,7 +36,7 @@
 
 .sidebar {
     height: 100vh;
-    width: 26%;
+    width: 15%;
     background-color: #19181A;
     padding-top: 10%;
     position: fixed;
@@ -88,11 +88,16 @@
     font-weight: bold;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     position: absolute;
-    color: white;
-    left: 33%;
+    left: 17%;
 }
 
 .buttonGroup {
     padding: 5%;
     text-align: center;
+}
+
+.jumbotron {
+    padding: 2%;
+    background-color: white;
+    border-radius: 3px;
 }

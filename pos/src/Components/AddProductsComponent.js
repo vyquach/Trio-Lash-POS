@@ -65,6 +65,7 @@ export default function AddProductsComponent() {
     }
     const handleSubmit = (e) => {
         e.preventDefault()
+        getCurrentInventory()
         var mess = ''
         newProducts.map((newProduct, index) => {
             products.map((product, i) => {
@@ -82,7 +83,6 @@ export default function AddProductsComponent() {
             newProducts.map((newProduct, index) => {
                 db.collection('Inventory').doc(newProduct.code).set(newProduct)
                 .then((docRef) => {
-                    getCurrentInventory()
                     resetNewProducts()
                     setErrorMessage('')
                 }).catch((error) => {
