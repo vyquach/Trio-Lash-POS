@@ -1,17 +1,19 @@
 import React, {useState, useEffect} from 'react'
 import MaterialTable from 'material-table'
-import { Alert, Jumbotron } from 'reactstrap'
+import { Alert } from 'reactstrap'
 import { db } from '../firebase'
 import { Button, TextField } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core'
 import { IconButton } from '@material-ui/core'
 import RemoveIcon from '@material-ui/icons/Remove'
 import AddIcone from '@material-ui/icons/Add'
+import {useAuth} from '../Context/AuthContext'
 
 export default function UpdateExistingProducts() {
     const [isComplete, setIsComplete] = useState(false)
     const [products, setProducts] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
+    const { userInfo } = useAuth()
     const [newProductErrorMessage, setNewProductErrorMessage] = useState('')
     const columns = [
         {title: 'Code', field: 'code'},
@@ -29,7 +31,7 @@ export default function UpdateExistingProducts() {
     ])
     const getCurrentInventory = () => {
         setProducts([])
-        db.collection('Inventory').where('name', '!=', null)
+        db.collection(userInfo.location).doc('Inventory').collection('Inventory')
         .get()
         .then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
@@ -42,10 +44,10 @@ export default function UpdateExistingProducts() {
     }
     useEffect(() => {
         getCurrentInventory()
-    }, [])
+    }, [])  // eslint-disable-line react-hooks/exhaustive-deps
     const removeProduct = (code) => {
         setIsComplete(false)
-        db.collection('Inventory').doc(code).delete().then(() => {
+        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(code).delete().then(() => {
             setIsComplete(true)
         }).catch((error) => {
             console.log(error)
@@ -63,7 +65,7 @@ export default function UpdateExistingProducts() {
             restock: updatedRow.restock,
             restockWSP: updatedRow.restockWSP,
             date: currentDate }
-        var ref = db.collection('RestockHistory').doc(currentDate).collection(String(Date.now()))
+        var ref = db.collection(userInfo.location).doc('RestockHistory').collection('RestockHistory')
         ref.doc(String(Date.now())).set(obj)
         .then((docRef) => {
             setIsComplete(true)
@@ -73,7 +75,6 @@ export default function UpdateExistingProducts() {
         })
     }
     const updateProduct = (updatedRow, oldRow) => {
-        console.log(products)
         setIsComplete(false) 
         var valid = true
         products.forEach((product) => {
@@ -85,7 +86,7 @@ export default function UpdateExistingProducts() {
             }
         })
         if(valid){
-            if(Number(updatedRow.restock) < 0 || ((Number(updatedRow.restock) - Math.floor(Number(updatedRow.restock))) !== 0) || Number(updatedRow.price) <= 0 || Number(updatedRow.restockWSP) < 0 || updatedRow.code.trim().length <= 0 || updatedRow.name.trim().length <= 0){
+            if(Number(updatedRow.restock) < 0 || ((Number(updatedRow.restock) - Math.floor(Number(updatedRow.restock))) !== 0) || Number(updatedRow.price) <= 0 || (Number(updatedRow.restockWSP) <= 0 && Number(updatedRow.restock > 0)) || (Number(updatedRow.restock <= 0 && updatedRow.restockWSP > 0)) || updatedRow.code.trim().length <= 0 || updatedRow.name.trim().length <= 0){
                 getCurrentInventory()
                 setErrorMessage('Invalid change. Please try again.')
             }
@@ -106,7 +107,7 @@ export default function UpdateExistingProducts() {
                     else {
                         obj.wsp = oldRow.wsp
                     }
-                    db.collection('Inventory').doc(updatedRow.code).update(obj)
+                    db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(updatedRow.code).update(obj)
                     .then(() => {
                         if(updatedRow.restock !== 0){
                             pushRestockHistory(updatedRow)
@@ -120,7 +121,7 @@ export default function UpdateExistingProducts() {
                 }
                 else{
                     removeProduct(oldRow.code)
-                    db.collection('Inventory').doc(updatedRow.code).set(updatedRow)
+                    db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(updatedRow.code).set(updatedRow)
                     .then((docRef) => {
                         setErrorMessage('')
                     }).catch((error) => {
@@ -143,7 +144,7 @@ export default function UpdateExistingProducts() {
     const classes = useStyles()
     const handleChangeInput = (index, event, type) => {
         const values = [...newProducts];
-        if(type === 'quantity' || type === 'price'){
+        if(type === 'quantity' || type === 'price' || type === 'wsp' || type === 'restock'){
             values[index][event.target.name] =  Number(event.target.value)
         }
         else{
@@ -184,15 +185,16 @@ export default function UpdateExistingProducts() {
             setNewProductErrorMessage(mess + ' already exist(s) in the inventory. Please use unique code(s).')
         }
         else if(validateInput() && (newProducts.length > 0 && newProducts[0].code.trim().length !== 0)) {
-            newProducts.map((newProduct, index) => {
-                db.collection('Inventory').doc(newProduct.code).set(newProduct)
-                .then((docRef) => {
+            newProducts.forEach((newProduct) => {
+                var ref = db.collection(userInfo.location).doc('Inventory').collection('Inventory')
+                ref.doc(newProduct.code).set(newProduct)
+            .then((docRef) => {
                     resetNewProducts()
-                    setNewProductErrorMessage('')
-                }).catch((error) => {
+                    setNewProductErrorMessage('') 
+            }).catch((err) => {
                     setNewProductErrorMessage('Unable to update. Please try again.')
-                })
-                return mess
+                console.log(err)
+        })
             })
         }
         else {
@@ -250,93 +252,91 @@ export default function UpdateExistingProducts() {
                 />
                 <br/><br/><hr/>
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>ADD NEW PRODUCT(S)</h1>
-                <Jumbotron>
-                    {newProductErrorMessage && <Alert color='danger'>{newProductErrorMessage}</Alert>}
-                    <form className={classes.root}>
-                        { newProducts.map((newProduct, index) => (
-                            <div key={index}>
-                                <TextField
-                                    variant='standard'
-                                    name='code'
-                                    label='Code'
-                                    value={newProduct.code}
-                                    required={true}
-                                    style ={{width: '12%'}}
-                                    onChange={event => handleChangeInput(index, event, 'code')}
-                                    error={(typeof newProduct.code) !== 'string' || newProduct.code.trim().length <= 0}
-                                />
-                                <TextField
-                                    variant='standard'
-                                    name='name'
-                                    label='Name'
-                                    value={newProduct.name}
-                                    required={true}
-                                    style ={{width: '15%'}}
-                                    onChange={event => handleChangeInput(index, event, 'name')}
-                                    error={(typeof newProduct.name) !== 'string' || newProduct.name.trim().length <= 0}
-                                />
-                                <TextField
-                                    variant='standard'                            
-                                    name='description'
-                                    label='Description'
-                                    value={newProduct.description}
-                                    multiline={true}
-                                    style ={{width: '25%'}}
-                                    onChange={event => handleChangeInput(index, event, 'description')}
-                                />
-                                <TextField
-                                    variant='standard'                            
-                                    name='ventor'
-                                    label='Ventor'
-                                    value={newProduct.ventor}
-                                    multiline={true}
-                                    style ={{width: '8%'}}
-                                    onChange={event => handleChangeInput(index, event, 'ventor')}
-                                />
-                                <TextField
-                                    variant='standard'                            
-                                    name='wsp'
-                                    label='WSP'
-                                    value={newProduct.wsp}
-                                    required={true}
-                                    type='number'
-                                    style ={{width: '8%'}}
-                                    onChange={event => handleChangeInput(index, event, 'wsp')}
-                                    error={Number(newProduct.wsp) <= 0}
-                                />
-                                <TextField
-                                    variant='standard'
-                                    name='price'
-                                    label='Price'
-                                    type='number'
-                                    value={newProduct.price}
-                                    required={true}
-                                    style = {{width: '8%'}}
-                                    onChange={event => handleChangeInput(index, event, 'price')}
-                                    error={Number(newProduct.price) <= 0}
-                                />
-                                <TextField
-                                    variant='standard'
-                                    name='quantity'
-                                    label='Quantity'
-                                    type='number'
-                                    value={newProduct.quantity}
-                                    required={true}
-                                    style = {{width: '8%'}}
-                                    onChange={event => handleChangeInput(index, event, 'quantity')}
-                                    error={Number(newProduct.quantity) <= 0 || ((Number(newProduct.quantity) - Math.floor(Number(newProduct.quantity))) !== 0)}
-                                />
-                                <IconButton onClick={() => handleRemoveFields(index)}>
-                                    <RemoveIcon></RemoveIcon>
-                                </IconButton>
-                                <IconButton onClick={() => handleAddFields()}>
-                                    <AddIcone></AddIcone>
-                                </IconButton>
-                            </div>
-                        ))}
-                    </form>
-                    <br/><Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>ADD</Button>
-                </Jumbotron>
+                {newProductErrorMessage && <Alert color='danger'>{newProductErrorMessage}</Alert>}
+                <form className={classes.root}>
+                    { newProducts.map((newProduct, index) => (
+                        <div key={index}>
+                            <TextField
+                                variant='standard'
+                                name='code'
+                                label='Code'
+                                value={newProduct.code}
+                                required={true}
+                                style ={{width: '12%'}}
+                                onChange={event => handleChangeInput(index, event, 'code')}
+                                error={(typeof newProduct.code) !== 'string' || newProduct.code.trim().length <= 0}
+                            />
+                            <TextField
+                                variant='standard'
+                                name='name'
+                                label='Name'
+                                value={newProduct.name}
+                                required={true}
+                                style ={{width: '15%'}}
+                                onChange={event => handleChangeInput(index, event, 'name')}
+                                error={(typeof newProduct.name) !== 'string' || newProduct.name.trim().length <= 0}
+                            />
+                            <TextField
+                                variant='standard'                            
+                                name='description'
+                                label='Description'
+                                value={newProduct.description}
+                                multiline={true}
+                                style ={{width: '28%'}}
+                                onChange={event => handleChangeInput(index, event, 'description')}
+                            />
+                            <TextField
+                                variant='standard'                            
+                                name='ventor'
+                                label='Ventor'
+                                value={newProduct.ventor}
+                                multiline={true}
+                                style ={{width: '8%'}}
+                                onChange={event => handleChangeInput(index, event, 'ventor')}
+                            />
+                            <TextField
+                                variant='standard'                            
+                                name='wsp'
+                                label='WSP'
+                                value={newProduct.wsp}
+                                required={true}
+                                type='number'
+                                style ={{width: '8%'}}
+                                onChange={event => handleChangeInput(index, event, 'wsp')}
+                                error={Number(newProduct.wsp) <= 0}
+                            />
+                            <TextField
+                                variant='standard'
+                                name='price'
+                                label='Price'
+                                type='number'
+                                value={newProduct.price}
+                                required={true}
+                                style = {{width: '8%'}}
+                                onChange={event => handleChangeInput(index, event, 'price')}
+                                error={Number(newProduct.price) <= 0}
+                            />
+                            <TextField
+                                variant='standard'
+                                name='quantity'
+                                label='Quantity'
+                                type='number'
+                                value={newProduct.quantity}
+                                required={true}
+                                style = {{width: '8%'}}
+                                onChange={event => handleChangeInput(index, event, 'quantity')}
+                                error={Number(newProduct.quantity) <= 0 || ((Number(newProduct.quantity) - Math.floor(Number(newProduct.quantity))) !== 0)}
+                            />
+                            <IconButton onClick={() => handleRemoveFields(index)}>
+                                <RemoveIcon></RemoveIcon>
+                            </IconButton>
+                            <IconButton onClick={() => handleAddFields()}>
+                                <AddIcone></AddIcone>
+                            </IconButton>
+                        </div>
+                    ))}
+                </form>
+                <br/><Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>ADD</Button>
             </div>
         )
     else {

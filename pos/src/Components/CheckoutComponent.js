@@ -11,6 +11,7 @@ import '../styling/OpenSansCondensed-Light-normal'
 import '../styling/OpenSansCondensed-Bold-normal'
 import { Col, Row, Alert } from 'reactstrap'
 import { makeStyles } from '@material-ui/core'
+import {useAuth} from '../Context/AuthContext'
 
 export default function CheckoutComponent() {
     const [isComplete, setIsComplete] = useState(false)
@@ -18,28 +19,38 @@ export default function CheckoutComponent() {
     const [checkoutItems, setCheckoutItems] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
     const [shippingMethod, setShippingMethod] = useState('In-person')
+    const [subtotal, setSubtotal] = useState(0)
+    const taxRate = 6
+    const [coupon, setCoupon] = useState('')
+    const [firstName, setFirstName] = useState('')
+    const [lastName, setLastName] = useState('')
+    const [shippingCost, setShippingCost] = useState(0)
+    const [paymentMethod, setPaymentMethod] = useState('Cash')
+    const { userInfo } = useAuth()
     const columns = [
         {title: 'Code', field: 'code', editable: false},
         {title: 'Name', field: 'name', editable: false},
         {title: 'Description', field: 'description', editable: false},
-        {title: 'Price', field: 'price'},
+        {title: 'Price', field: 'price', editable: false},
         {title: 'Quantity', field: 'quantity'},
     ]
     const getCurrentInventory = () => {
-        setProducts([])
         setIsComplete(false)
-        db.collection('Inventory').where('name', '!=', null)
+        setProducts([])
+        db.collection(userInfo.location).doc('Inventory').collection('Inventory')
         .get()
         .then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
-            setProducts(products =>[...products, doc.data()])
+            const temp = {restock : 0, restockWSP: 0}
+            const item = Object.assign(doc.data(), temp)
+            setProducts(products =>[...products, item])
             })
         })
         setIsComplete(true)
     }
     useEffect(() => {
         getCurrentInventory()
-    }, []) 
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
     const useStyles = makeStyles((theme) =>({
         root: {
             '& .MuiTextField-root': {
@@ -64,6 +75,7 @@ export default function CheckoutComponent() {
                         newCheckoutItem[index] = temp
                         setCheckoutItems(newCheckoutItem)
                         seen = true
+                        setSubtotal(subtotal + product.price)
                         products.forEach((product) => {
                             if(product.code === data){
                                 product.quantity -= 1
@@ -81,6 +93,7 @@ export default function CheckoutComponent() {
                     temp.quantity = 1
                     setCheckoutItems(checkoutItems =>[...checkoutItems, temp])
                     product.quantity -=  1
+                    setSubtotal(subtotal + product.price)
                     exist = true
                     return
                 }
@@ -100,78 +113,132 @@ export default function CheckoutComponent() {
     const handleError = (code) => {
         setErrorMessage('Unable to scan the item. Please try again.')
     }
-    const removeProduct = (code) => {
+    const removeProduct = (item) => {
         products.forEach((product) => {
-            if(product.code === code){
-                product.quantity += 1
+            if(product.code === item.code){
+                product.quantity += Number(item.quantity)
+                setSubtotal(subtotal - item.price * item.quantity)
             }
         })
     }
-    const updateProduct = (code, price, quantity) => {
-        if(Number(quantity) <= 0 || ((Number(quantity) - Math.floor(Number(quantity))) !== 0) || Number(price) <= 0){
+    const updateProduct = (updatedRow, oldRow) => {
+        if(Number(updatedRow.quantity) <= 0 || ((Number(updatedRow.quantity) - Math.floor(Number(updatedRow.quantity))) !== 0)){
             setErrorMessage('Invalid change. Please try again.')
         }
         else {
+            if(updatedRow.code === oldRow.code && updatedRow.quantity !== oldRow.quantity){
+                setSubtotal(subtotal - (oldRow.quantity * oldRow.price) + (updatedRow.quantity * updatedRow.price))
+                products.forEach((product) => {
+                    if(product.code === updatedRow.code){
+                        product.quantity = product.quantity + Number(oldRow.quantity) - Number(updatedRow.quantity)
+                    }
+                })
+            }
             checkoutItems.forEach((item) => {
-                if(item.code === code){
-                    item.price = price
-                    item.quantity = quantity
+                if(item.code === updatedRow.code){
+                    item.quantity = updatedRow.quantity
                 }
             })
         }
     }
-    const checkoutHelper = () => {
+    const handleCheckout = () => {
         setErrorMessage('')
-        if(checkoutItems.length > 0){
-            checkoutItems.forEach((item) => {
-                products.forEach((product) => {
-                    if(product.code === item.code){
-                        db.collection('Inventory').doc(product.code).update(product).then(() => {
-                            setIsComplete(true)
-                        }).catch((error) => {
-                            console.log(error)
-                        })
-                    }
-                })
+        var list = []
+        var date = new Date()
+        var orderNum = Date.now()
+        var orderDate = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+        checkoutItems.forEach((item) => {
+            list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, subtotal: (item.price * item.quantity)})
+        })
+        var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: coupon, shippingMethod: shippingMethod, paymentMethod: paymentMethod, location: 'South Philly', tax: (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100, subtotal: subtotal, total: subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100), commission: 0.0, items: list}
+        if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS')) {
+            orderObj.commission = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
+        }
+        db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1))
+        .get()
+        .then((querySnapshot) => {
+            var obj = {}
+            if(querySnapshot.data() === undefined){
+                obj['revenue'] = subtotal
+                obj[paymentMethod] = subtotal
+                obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
+                db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).set(obj)
+            }
+            else{
+                obj = querySnapshot.data()
+                obj['revenue'] = obj['revenue'] + subtotal
+                if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS')) {
+                    obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100 + obj['commission']
+                }
+                if(obj[paymentMethod] === undefined || obj[paymentMethod] === 0){
+                    console.log('inhere')
+                    obj[paymentMethod] = subtotal
+                }
+                else{
+                    obj[paymentMethod] = obj[paymentMethod] + subtotal
+                }
+                db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).update(obj)
+            }
+        })
+        setIsComplete(false)
+        db.collection(userInfo.location).doc('Orders').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(orderNum)).set(orderObj)
+            .then((docRef) => {
+                setIsComplete(true)
+                setErrorMessage('')
+            }).catch((error) => {
+                setErrorMessage('Unable to place the order. Please try again.')
+        })
+        checkoutItems.forEach((item) => {
+            products.forEach((product) => {
+                if(product.code === item.code){
+                    db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(product.code).update(product).then(() => {
+                        setIsComplete(true)
+                    }).catch((error) => {
+                        console.log(error)
+                    })
+                }
             })
-            setCheckoutItems([])
-        }
-        else{
-            setErrorMessage('Your cart is empty.')
-        }
+        })
+        setCheckoutItems([])
+        setSubtotal(0)
+        setCoupon('')
+        setShippingMethod('In-person')
+        return [orderNum, orderDate, list]
     }
     const handleClear = () => {
         checkoutItems.forEach((item) => {
-            removeProduct(item.code)
+            removeProduct(item)
         })
         setCheckoutItems([])
+        setSubtotal(0)
+        setShippingMethod('In-person')
+        setCoupon('')
         setErrorMessage('')
     }
     const handleShippingChange = (event) => {
+        if(event.target.value === 'USPS/UPS'){
+            setShippingCost(7.95)
+        } 
+        else{
+            setShippingCost(0)
+        }
         setShippingMethod(event.target.value)
+    }
+    const handlePaymentMethod = (event) => {
+        setPaymentMethod(event.target.value)
+    }
+    const handleCoupon = (event) => {
+        setCoupon(event.target.value)
+    }
+    const handleFirstName = (event) => {
+        setFirstName(event.target.value)
+    }
+    const handleLastName = (event) => {
+        setLastName(event.target.value)
     }
     const handleCheckoutAndPrint = () => {
         if(checkoutItems.length > 0){
-            var total = 0
-            var list = []
-            var date = new Date()
-            var orderNum = Date.now()
-            var orderDate = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-            var tax = 6.0
-            checkoutItems.forEach((item) => {
-                list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, total: (item.price * item.quantity)})
-                total += item.price * item.quantity
-            })
-            checkoutHelper()
-            var orderObj = {orderNum: orderNum, date: orderDate, location: 'South Philly', tax: tax, total: Math.round(((total + ((tax/100) * total) + Number.EPSILON) * 100)) / 100, order: list}
-            setIsComplete(false)
-            db.collection('Orders').doc(String(orderNum)).set(orderObj)
-                .then((docRef) => {
-                    setIsComplete(true)
-                    setErrorMessage('')
-                }).catch((error) => {
-                    setErrorMessage('Unable to place the order. Please try again.')
-            })
+            var temp = handleCheckout()
             var doc = new jsPDF('portrait', 'px', 'a5', 'false')
             doc.addImage(image, 'PNG', 15, 15, 120, 47)
             doc.setFont('BonheurRoyale-Regular', 'normal')
@@ -181,9 +248,9 @@ export default function CheckoutComponent() {
             doc.setFontSize(20)
             doc.text(180, 140, 'FOR YOUR PURCHASE!')
             doc.setFontSize(11)
-            doc.text(20, 160, 'Order #: ' + orderNum)
-            doc.text(20, 170, 'Date: ' + orderDate)
-            doc.text(20, 180, 'Inventory Location: South Philly')
+            doc.text(20, 160, 'Order #: ' + temp[0])
+            doc.text(20, 170, 'Date: ' + temp[1])
+            doc.text(20, 180, 'Inventory Location: ' + String(userInfo.location))
             doc.line(20,  190, 295, 190)
             doc.autoTable({
                 theme: 'plain',
@@ -194,19 +261,33 @@ export default function CheckoutComponent() {
                     { header: 'Quantity', dataKey: 'quantity' },
                     { header: 'Description', dataKey: 'description' },
                     { header: 'Unit Price', dataKey: 'unitPrice'},
-                    { header: 'Total', dataKey: 'total'}
+                    { header: 'Total', dataKey: 'subtotal'}
                 ],
-                body: list,
+                body: temp[2],
               })
             doc.setFont('OpenSansCondensed-Bold', 'normal')
             doc.setFontSize(13)
             doc.text(177, doc.autoTable.previous.finalY + 40, 'Subtotal:')
-            doc.text(248, doc.autoTable.previous.finalY + 40,  '$' + String(total))
-            doc.text(177, doc.autoTable.previous.finalY + 55, 'Sale Tax (' + String(tax) + '%):')
-            doc.text(248, doc.autoTable.previous.finalY + 55, '$' + String((Math.round((((tax/100) * total) + Number.EPSILON) * 100)) / 100))
+            doc.text(248, doc.autoTable.previous.finalY + 40,  '$' + String(subtotal))
+            doc.text(177, doc.autoTable.previous.finalY + 55, 'Sale Tax (' + String(taxRate) + '%):')
+            doc.text(248, doc.autoTable.previous.finalY + 55, '$' + String((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
+            if(coupon.length !== 0){
+                doc.text(177, doc.autoTable.previous.finalY + 70, 'Coupon (' + coupon + '):')
+                doc.text(248, doc.autoTable.previous.finalY + 70, '$0')
+            }
+
+            if(shippingCost !== 0){
+                doc.text(177, doc.autoTable.previous.finalY + 85, 'Shipping: ' + {shippingMethod})
+                doc.text(248, doc.autoTable.previous.finalY + 85, {shippingCost})
+            }
             doc.setFontSize(15)
-            doc.text(177, doc.autoTable.previous.finalY + 90, 'Total:')
-            doc.text(248, doc.autoTable.previous.finalY + 90, '$' + String(Math.round(((total + ((tax/100) * total) + Number.EPSILON) * 100)) / 100))
+            doc.text(177, doc.autoTable.previous.finalY + 110, 'Total:')
+            if(shippingCost !== 0){
+                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(subtotal + shippingCost + (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
+            }
+            else {
+                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(subtotal + (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
+            }
             doc.autoPrint()
             doc.output('dataurlnewwindow')
             }
@@ -215,7 +296,6 @@ export default function CheckoutComponent() {
         }
     }   
     if(isComplete){
-        console.log(shippingMethod)
         return (
             <div style={{position:'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <BarcodeReader minLength={4} onScan={handleBarcode} onError={handleError}></BarcodeReader>
@@ -226,22 +306,25 @@ export default function CheckoutComponent() {
                     variant='standard'
                     name='firstName'
                     label='First Name'
-                    value=''
+                    value={firstName}
                     style ={{width: '18%'}}
+                    onChange={handleFirstName}
                 />
                 <TextField
                     variant='standard'
                     name='lastName'
                     label='Last Name'
-                    value=''
+                    value={lastName}
                     style ={{width: '18%'}}
+                    onChange={handleLastName}
                 /><br/>
                 <TextField
                     variant='standard'
                     name='coupon'
                     label='Coupon'
-                    value=''
+                    value={coupon}
                     style ={{width: '18%'}}
+                    onChange={handleCoupon}
                 />
                 <TextField
                     id='standard-select-currency'
@@ -255,7 +338,24 @@ export default function CheckoutComponent() {
                     <MenuItem key='Next-day' value='Next-day'>Next-day pickup</MenuItem>
                     <MenuItem key='UPSP/UPS' value='USPS/UPS'>USPS/UPS Shipping</MenuItem>
                 </TextField>
+                <TextField
+                    id='standard-select-currency'
+                    select
+                    label='Payment Method'
+                    value={paymentMethod}
+                    style = {{width: '35%'}}
+                    variant='standard'
+                    onChange={handlePaymentMethod}>
+                    <MenuItem key='Cash' value='Cash'>Cash</MenuItem>
+                    <MenuItem key='Credit-Debit Card' value='Credit-Debit Card'>Credit/Debit Card</MenuItem>
+                    <MenuItem key='CashApp' value='CashApp'>CashApp</MenuItem>
+                    <MenuItem key='Venmo' value='Venmo'>Venmo</MenuItem>
+                    <MenuItem key='Paypal' value='Paypal'>Paypal</MenuItem>
+                    <MenuItem key='Others' value='Others'>Others</MenuItem>
+                </TextField>
                 </form>
+                <br/><br/><hr/>
+                <h1 style={{padding: '3%', fontWeight: 'bolder'}}>CART</h1>
                 <MaterialTable
                      columns={columns} 
                      data={checkoutItems} 
@@ -267,18 +367,17 @@ export default function CheckoutComponent() {
                             updatedCheckoutItems.splice(index, 1)
                             setTimeout(() => {
                                 setCheckoutItems(updatedCheckoutItems)
-                                removeProduct(selectedRow.code)
+                                removeProduct(selectedRow)
                                 resolve()
                             }, 2000)
                         }),
                         onRowUpdate:(updatedRow, oldRow) => new Promise((resolve, reject) => {
-                            console.log(updatedRow)
                             const index = oldRow.tableData.id
                             const updatedCheckoutItems = [...checkoutItems]
                             updatedCheckoutItems[index] = updatedRow
                             setTimeout(() => {
                                 setCheckoutItems(updatedCheckoutItems)
-                                updateProduct(updatedRow.code, updatedRow.price, updatedRow.quantity)
+                                updateProduct(updatedRow, oldRow)
                                 resolve()
                             }, 2000)
                         })
@@ -287,7 +386,13 @@ export default function CheckoutComponent() {
                          actionsColumnIndex:-1, addRowPosition:'first', pageSize:10, pageSizeOptions:[10, 15, 20, 30], search: false
                      }}
                      />
+                     <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Subtotal: ${subtotal}</h5>
+                     <h5 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Sale Tax ({taxRate}%): ${(Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100}</h5>
+                     {coupon && <h5 style={{paddingLeft: '70%', fontWeight: 'bolder'}}>Coupon ({coupon}): $0</h5>}
+                     {shippingCost !== 0 && <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Shipping ({shippingMethod}): ${shippingCost}</h5>}
+                     {shippingCost !== 0 ? <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100) + Number(shippingCost)}</h4> : <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100)}</h4>}
                      <Row className='buttonGroup'>
+                         <Col><Button variant='outlined' onClick={handleCheckout}>CHECK OUT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleCheckoutAndPrint}>CHECK OUT AND PRINT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleClear}>CLEAR</Button></Col>
                      </Row>

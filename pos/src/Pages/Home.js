@@ -2,22 +2,27 @@ import React, { useState} from 'react'
 import StorefrontOutlinedIcon from '@material-ui/icons/StorefrontOutlined';
 import LocalGroceryStoreOutlinedIcon from '@material-ui/icons/LocalGroceryStoreOutlined';
 import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined';
+import DashboardOutlinedIcon from '@material-ui/icons/DashboardOutlined';
+import CompareArrowsOutlinedIcon from '@material-ui/icons/CompareArrowsOutlined';
 import {useAuth} from '../Context/AuthContext'
 import { useHistory } from 'react-router-dom';
 import { Col, Row } from 'reactstrap';
 import UpdateInventory from '../Components/UpdateInventory'
 import CheckoutComponent from '../Components/CheckoutComponent';
+import DashboardComponent from '../Components/DashBoardComponent'
+import RefundComponent from '../Components/RefundComponent';
 
 export default function Home() {
 
     const { logOut } = useAuth()
     const { history } = useHistory()
-    const [updateInventory, setUpdateInventory] = useState(true)
+    const [dashboard, setDashboard] = useState(true)
+    const [updateInventory, setUpdateInventory] = useState(false)
     const [checkout, setCheckout] = useState(false)
-
+    const [refund, setRefund] = useState(false)
 
     document.title = "Home | Trio Lash"
-    
+
     async function handleLogOut(e){
         e.preventDefault()
         try {
@@ -26,13 +31,29 @@ export default function Home() {
         } catch {
         }
     }
+    function handleDashboard(){
+        setDashboard(true)
+        setUpdateInventory(false)
+        setCheckout(false)
+        setRefund(false)
+    }
     function handleUpdateInventory(){
+        setDashboard(false)
         setUpdateInventory(true)
         setCheckout(false)
+        setRefund(false)
     }
     function handleCheckout(){
+        setDashboard(false)
         setUpdateInventory(false)
         setCheckout(true)
+        setRefund(false)
+    }
+    function handleRefund(){
+        setDashboard(false)
+        setUpdateInventory(false)
+        setCheckout(false)
+        setRefund(true)
     }
 
     return (
@@ -40,6 +61,14 @@ export default function Home() {
             <Col xs='4' sm='4'>
                 <div className='sidebar'>
                     <ul className='sidebarList'>
+                        {dashboard ? <li id={'dashboard'} className='row' onClick={handleDashboard}>
+                            <div id='icon'><DashboardOutlinedIcon/></div>
+                            <div id='title'>DASHBOARD</div>
+                        </li> :
+                        <li className='row' onClick={handleDashboard}>
+                            <div id='icon'><DashboardOutlinedIcon/></div>
+                            <div id='title'>DASHBOARD</div>
+                        </li>}
                         {updateInventory ? <li id={'updateInventory'} className='row' onClick={handleUpdateInventory}>
                             <div id='icon'><StorefrontOutlinedIcon/></div>
                             <div id='title'>UPDATE INVENTORY</div>
@@ -56,6 +85,14 @@ export default function Home() {
                             <div id='icon'><LocalGroceryStoreOutlinedIcon/></div>
                             <div id='title'>CHECK OUT</div>
                         </li>}
+                        {refund ? <li id={'refund'} className='row' onClick={handleRefund}>
+                            <div id='icon'><CompareArrowsOutlinedIcon/></div>
+                            <div id='title'>REFUND - LOST/DAMAGE</div>
+                        </li> :
+                        <li className='row' onClick={handleRefund}>
+                            <div id='icon'><CompareArrowsOutlinedIcon/></div>
+                            <div id='title'>REFUND - LOST/DAMAGE</div>
+                        </li>}
                         <li id={'logout'} className='row' onClick={handleLogOut}>
                             <div id='icon'><ExitToAppOutlinedIcon/></div>
                             <div id='title'>LOGOUT</div>
@@ -66,7 +103,9 @@ export default function Home() {
             <Col xs='auto' sm='auto' className='contentArea'>
                 <div>
                     {updateInventory && <UpdateInventory/>}
-                    {checkout && <div><CheckoutComponent/></div>}
+                    {checkout && <CheckoutComponent/>}
+                    {dashboard && <DashboardComponent/>}
+                    {refund && <RefundComponent/>}
                 </div>
             </Col>
         </Row>
