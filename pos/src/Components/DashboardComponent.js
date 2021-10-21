@@ -10,7 +10,6 @@ export default function DashboardComponent() {
     const [monthlySummary, setMonthlySummary] = useState({
         revenue: 0,
         commission: 0,
-
     })
     const [bestSeller, setBestSeller] = useState([])
     const { userInfo } = useAuth()
@@ -74,6 +73,7 @@ export default function DashboardComponent() {
             })
             for(const [key, value] of Object.entries(sales)){
                 itemSold += value.quantity
+                if(key !== null){}
             }
             for(let i = 0; i < 3; i++){
                 let max = 0
@@ -110,7 +110,7 @@ export default function DashboardComponent() {
                          <Col style={{paddingTop: '3%'}}>
                             <div style={{position: 'relative', backgroundColor: '#99CED3', padding: '3%'}}>
                             <h4 style={{fontWeight: 'bolder', color: 'white'}}>COMMISSION</h4>
-                            <h1 style={{fontWeight: 'bolder', color: 'white', textAlign: 'right', fontSize: '40px'}}>${monthlySummary.commission}</h1>
+                            <h1 style={{fontWeight: 'bolder', color: 'white', textAlign: 'right', fontSize: '40px'}}>${(Math.round(monthlySummary.commission * 100) / 100).toFixed(2)}</h1>
                             </div>
                          </Col>
                     </Row>

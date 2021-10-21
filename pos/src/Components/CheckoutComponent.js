@@ -18,14 +18,17 @@ export default function CheckoutComponent() {
     const [products, setProducts] = useState([])
     const [checkoutItems, setCheckoutItems] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
-    const [shippingMethod, setShippingMethod] = useState('In-person')
+    const [shippingMethod, setShippingMethod] = useState('')
+    const [shippingMethodList, setShippingMethodList] = useState([])
     const [subtotal, setSubtotal] = useState(0)
-    const taxRate = 6
+    //const taxRate = 6
+    const [taxRate, setTaxRate] = useState(0)
     const [coupon, setCoupon] = useState('')
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [shippingCost, setShippingCost] = useState(0)
-    const [paymentMethod, setPaymentMethod] = useState('Cash')
+    const [paymentMethod, setPaymentMethod] = useState('')
+    const [paymentMethodList, setPaymentMethodList] = useState([])
     const { userInfo } = useAuth()
     const columns = [
         {title: 'Code', field: 'code', editable: false},
@@ -48,7 +51,42 @@ export default function CheckoutComponent() {
         })
         setIsComplete(true)
     }
+    async function initConfig(){
+        try{
+            db.collection('Configuration').doc('Configuration')
+            .get()
+            .then((querySnapShot) => {
+                var shippingList = querySnapShot.data().shippingMethod
+                var newShippingList = []
+                shippingList.forEach((item) => {
+                    var temp = {}
+                    temp.value = item
+                    temp.label = item
+                    newShippingList.push(temp)
+                })
+                setShippingMethodList(newShippingList)
+                var paymentList = querySnapShot.data().paymentMethod
+                var newPaymentList = []
+                paymentList.forEach((item) => {
+                    var temp = {}
+                    temp.value = item
+                    temp.label = item
+                    newPaymentList.push(temp)
+                })
+                setPaymentMethodList(newPaymentList)
+            })
+            db.collection(userInfo.location).doc('Configuration')
+            .get()
+            .then((querySnapShot) => {
+                setTaxRate(Number(querySnapShot.data().taxRate))
+            })
+        }
+        catch{
+            setErrorMessage('Unable to get the shipping method list and/or the payment method list. Please try again later.')
+        }
+    }
     useEffect(() => {
+        initConfig()
         getCurrentInventory()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
     const useStyles = makeStyles((theme) =>({
@@ -150,8 +188,8 @@ export default function CheckoutComponent() {
         checkoutItems.forEach((item) => {
             list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, subtotal: (item.price * item.quantity)})
         })
-        var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: coupon, shippingMethod: shippingMethod, paymentMethod: paymentMethod, location: 'South Philly', tax: (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100, subtotal: subtotal, total: subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100), commission: 0.0, items: list}
-        if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS')) {
+        var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: coupon, shippingMethod: shippingMethod, paymentMethod: paymentMethod, location: userInfo.location, tax: (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100, subtotal: subtotal, total: subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100), commission: 0.0, status: 'complete', items: list}
+        if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
             orderObj.commission = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
         }
         db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1))
@@ -171,7 +209,6 @@ export default function CheckoutComponent() {
                     obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100 + obj['commission']
                 }
                 if(obj[paymentMethod] === undefined || obj[paymentMethod] === 0){
-                    console.log('inhere')
                     obj[paymentMethod] = subtotal
                 }
                 else{
@@ -202,7 +239,11 @@ export default function CheckoutComponent() {
         setCheckoutItems([])
         setSubtotal(0)
         setCoupon('')
-        setShippingMethod('In-person')
+        setShippingMethod('')
+        setFirstName('')
+        setLastName('')
+        setShippingCost(0)
+        setPaymentMethod('')
         return [orderNum, orderDate, list]
     }
     const handleClear = () => {
@@ -216,7 +257,7 @@ export default function CheckoutComponent() {
         setErrorMessage('')
     }
     const handleShippingChange = (event) => {
-        if(event.target.value === 'USPS/UPS'){
+        if(event.target.value === 'USPS/UPS Shipping'){
             setShippingCost(7.95)
         } 
         else{
@@ -334,9 +375,9 @@ export default function CheckoutComponent() {
                     style = {{width: '35%'}}
                     variant='standard'
                     onChange={handleShippingChange}>
-                    <MenuItem key='In-person' value='In-person'>In-person (same day pickup)</MenuItem>
-                    <MenuItem key='Next-day' value='Next-day'>Next-day pickup</MenuItem>
-                    <MenuItem key='UPSP/UPS' value='USPS/UPS'>USPS/UPS Shipping</MenuItem>
+                    {shippingMethodList.map((option) => {
+                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    })}
                 </TextField>
                 <TextField
                     id='standard-select-currency'
@@ -346,12 +387,9 @@ export default function CheckoutComponent() {
                     style = {{width: '35%'}}
                     variant='standard'
                     onChange={handlePaymentMethod}>
-                    <MenuItem key='Cash' value='Cash'>Cash</MenuItem>
-                    <MenuItem key='Credit-Debit Card' value='Credit-Debit Card'>Credit/Debit Card</MenuItem>
-                    <MenuItem key='CashApp' value='CashApp'>CashApp</MenuItem>
-                    <MenuItem key='Venmo' value='Venmo'>Venmo</MenuItem>
-                    <MenuItem key='Paypal' value='Paypal'>Paypal</MenuItem>
-                    <MenuItem key='Others' value='Others'>Others</MenuItem>
+                    {paymentMethodList.map((option) => {
+                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    })}
                 </TextField>
                 </form>
                 <br/><br/><hr/>

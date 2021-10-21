@@ -80,7 +80,6 @@ export default function UpdateExistingProducts() {
         products.forEach((product) => {
             if(product.code === updatedRow.code && updatedRow.code !== oldRow.code){
                 setErrorMessage('The code ' + updatedRow.code + ' already exists in the inventory. Please provide a unique code.')
-                setProducts([])
                 setIsComplete(true)
                 valid = false
             }
@@ -336,7 +335,9 @@ export default function UpdateExistingProducts() {
                         </div>
                     ))}
                 </form>
+                    <div className={'buttonGroup'}>
                 <br/><Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>ADD</Button>
+                    </div>
             </div>
         )
     else {
