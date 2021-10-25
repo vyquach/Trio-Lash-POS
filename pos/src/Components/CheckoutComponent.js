@@ -19,9 +19,9 @@ export default function CheckoutComponent() {
     const [checkoutItems, setCheckoutItems] = useState([])
     const [errorMessage, setErrorMessage] = useState('')
     const [shippingMethod, setShippingMethod] = useState('')
+    const [customShippingMethod, setCustomShippingMethod] = useState(false)
     const [shippingMethodList, setShippingMethodList] = useState([])
     const [subtotal, setSubtotal] = useState(0)
-    //const taxRate = 6
     const [taxRate, setTaxRate] = useState(0)
     const [coupon, setCoupon] = useState('')
     const [firstName, setFirstName] = useState('')
@@ -180,71 +180,88 @@ export default function CheckoutComponent() {
         }
     }
     const handleCheckout = () => {
-        setErrorMessage('')
-        var list = []
-        var date = new Date()
-        var orderNum = Date.now()
-        var orderDate = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
-        checkoutItems.forEach((item) => {
-            list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, subtotal: (item.price * item.quantity)})
-        })
-        var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: coupon, shippingMethod: shippingMethod, paymentMethod: paymentMethod, location: userInfo.location, tax: (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100, subtotal: subtotal, total: subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100), commission: 0.0, status: 'complete', items: list}
-        if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
-            orderObj.commission = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
+        if(shippingMethod === '' || shippingMethod === undefined || shippingMethod === null){
+            setErrorMessage('Please provide Shipping Method and try again.')
+            return [0, 0, []]
         }
-        db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1))
-        .get()
-        .then((querySnapshot) => {
-            var obj = {}
-            if(querySnapshot.data() === undefined){
-                obj['revenue'] = subtotal
-                obj[paymentMethod] = subtotal
-                obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
-                db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).set(obj)
+        else if(paymentMethod === '' || paymentMethod === undefined || paymentMethod === null){
+            setErrorMessage('Please provide Payment Method and try again.')
+            return [0, 0, []]
+        }
+        else if(checkoutItems === undefined || checkoutItems === null || checkoutItems.length === 0){
+            setErrorMessage('Your cart is empty.')
+            return [0, 0, []]
+        }
+        else if(shippingMethod === 'Custom' && shippingCost <= 0){
+            setErrorMessage('Please provide a valid Shipping Cost and try again.')
+            return [0, 0, []]
+        }
+        else{
+            setErrorMessage('')
+            var list = []
+            var date = new Date()
+            var orderNum = Date.now()
+            var orderDate = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate()
+            checkoutItems.forEach((item) => {
+                list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, subtotal: (item.price * item.quantity)})
+            })
+            var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: coupon, shippingMethod: shippingMethod, paymentMethod: paymentMethod, location: userInfo.location, tax: (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100, subtotal: subtotal, total: subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100), commission: 0.0, status: 'complete', items: list}
+            if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
+                orderObj.commission = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
             }
-            else{
-                obj = querySnapshot.data()
-                obj['revenue'] = obj['revenue'] + subtotal
-                if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS')) {
-                    obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100 + obj['commission']
-                }
-                if(obj[paymentMethod] === undefined || obj[paymentMethod] === 0){
+            db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1))
+            .get()
+            .then((querySnapshot) => {
+                var obj = {}
+                if(querySnapshot.data() === undefined){
+                    obj['revenue'] = subtotal
                     obj[paymentMethod] = subtotal
+                    if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')){
+                        obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
+                    }
+                    else{
+                        obj['commission'] = 0
+                    }
+                    db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).set(obj)
                 }
                 else{
-                    obj[paymentMethod] = obj[paymentMethod] + subtotal
-                }
-                db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).update(obj)
-            }
-        })
-        setIsComplete(false)
-        db.collection(userInfo.location).doc('Orders').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(orderNum)).set(orderObj)
-            .then((docRef) => {
-                setIsComplete(true)
-                setErrorMessage('')
-            }).catch((error) => {
-                setErrorMessage('Unable to place the order. Please try again.')
-        })
-        checkoutItems.forEach((item) => {
-            products.forEach((product) => {
-                if(product.code === item.code){
-                    db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(product.code).update(product).then(() => {
-                        setIsComplete(true)
-                    }).catch((error) => {
-                        console.log(error)
-                    })
+                    obj = querySnapshot.data()
+                    obj['revenue'] = obj['revenue'] + subtotal
+                    if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
+                        obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100 + obj['commission']
+                    }
+                    if(obj[paymentMethod] === undefined || obj[paymentMethod] === 0){
+                        obj[paymentMethod] = subtotal
+                    }
+                    else{
+                        obj[paymentMethod] = obj[paymentMethod] + subtotal
+                    }
+                    db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).update(obj)
                 }
             })
-        })
-        setCheckoutItems([])
-        setSubtotal(0)
-        setCoupon('')
-        setShippingMethod('')
-        setFirstName('')
-        setLastName('')
-        setShippingCost(0)
-        setPaymentMethod('')
-        return [orderNum, orderDate, list]
+            setIsComplete(false)
+            db.collection(userInfo.location).doc('Orders').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(orderNum)).set(orderObj)
+                .then((docRef) => {
+                    db.collection(userInfo.location).doc('Orders').collection('MostRecentOrder').doc('MostRecentOrder').set(orderObj)
+                    setIsComplete(true)
+                    setErrorMessage('')
+                }).catch((error) => {
+                    setErrorMessage('Unable to place the order. Please try again.')
+            })
+            checkoutItems.forEach((item) => {
+                products.forEach((product) => {
+                    if(product.code === item.code){
+                        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(product.code).update(product).then(() => {
+                            setIsComplete(true)
+                        }).catch((error) => {
+                            console.log(error)
+                        })
+                    }
+                })
+            })
+            handleClear()
+            return [orderNum, orderDate, list]
+        }
     }
     const handleClear = () => {
         checkoutItems.forEach((item) => {
@@ -252,16 +269,27 @@ export default function CheckoutComponent() {
         })
         setCheckoutItems([])
         setSubtotal(0)
-        setShippingMethod('In-person')
+        setShippingMethod('')
+        setPaymentMethod('')
+        setShippingCost(0)
         setCoupon('')
+        setFirstName('')
+        setLastName('')
+        setCustomShippingMethod(false)
         setErrorMessage('')
     }
     const handleShippingChange = (event) => {
         if(event.target.value === 'USPS/UPS Shipping'){
             setShippingCost(7.95)
-        } 
+            setCustomShippingMethod(false)
+        }
+        else if(event.target.value === 'Custom'){
+            setShippingCost(0)
+            setCustomShippingMethod(true)
+        }
         else{
             setShippingCost(0)
+            setCustomShippingMethod(false)
         }
         setShippingMethod(event.target.value)
     }
@@ -277,8 +305,14 @@ export default function CheckoutComponent() {
     const handleLastName = (event) => {
         setLastName(event.target.value)
     }
+    const handleShippingCost = (event) => {
+        setShippingCost(event.target.value)
+    }
     const handleCheckoutAndPrint = () => {
-        if(checkoutItems.length > 0){
+        if(shippingMethod === 'Custom' && shippingCost <= 0){
+            setErrorMessage('Please provide a valid Shipping Cost and try again.')
+        }
+        else if(checkoutItems.length > 0 && shippingMethod !== '' && shippingMethod !== null && shippingMethod !== undefined && paymentMethod !== '' && paymentMethod !== null && paymentMethod !== undefined){
             var temp = handleCheckout()
             var doc = new jsPDF('portrait', 'px', 'a5', 'false')
             doc.addImage(image, 'PNG', 15, 15, 120, 47)
@@ -308,31 +342,37 @@ export default function CheckoutComponent() {
               })
             doc.setFont('OpenSansCondensed-Bold', 'normal')
             doc.setFontSize(13)
-            doc.text(177, doc.autoTable.previous.finalY + 40, 'Subtotal:')
+            doc.text(130, doc.autoTable.previous.finalY + 40, 'Subtotal:')
             doc.text(248, doc.autoTable.previous.finalY + 40,  '$' + String(subtotal))
-            doc.text(177, doc.autoTable.previous.finalY + 55, 'Sale Tax (' + String(taxRate) + '%):')
+            doc.text(130, doc.autoTable.previous.finalY + 55, 'Sale Tax (' + String(taxRate) + '%):')
             doc.text(248, doc.autoTable.previous.finalY + 55, '$' + String((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
             if(coupon.length !== 0){
-                doc.text(177, doc.autoTable.previous.finalY + 70, 'Coupon (' + coupon + '):')
+                doc.text(130, doc.autoTable.previous.finalY + 70, 'Coupon (' + coupon + '):')
                 doc.text(248, doc.autoTable.previous.finalY + 70, '$0')
             }
 
             if(shippingCost !== 0){
-                doc.text(177, doc.autoTable.previous.finalY + 85, 'Shipping: ' + {shippingMethod})
-                doc.text(248, doc.autoTable.previous.finalY + 85, {shippingCost})
+                doc.text(130, doc.autoTable.previous.finalY + 85, 'Shipping: ' + shippingMethod)
+                doc.text(248, doc.autoTable.previous.finalY + 85, '$' + String(shippingCost))
             }
             doc.setFontSize(15)
-            doc.text(177, doc.autoTable.previous.finalY + 110, 'Total:')
+            doc.text(130, doc.autoTable.previous.finalY + 110, 'Total:')
             if(shippingCost !== 0){
-                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(subtotal + shippingCost + (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
+                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(Math.round((((taxRate/100) * subtotal + Number(subtotal) + Number(shippingCost)) + Number.EPSILON) * 100) / 100))
             }
             else {
-                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(subtotal + (Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))
+                doc.text(248, doc.autoTable.previous.finalY + 110, '$' + String(Math.round((((taxRate/100) * subtotal + Number(subtotal)) + Number.EPSILON) * 100) / 100))
             }
             doc.autoPrint()
             doc.output('dataurlnewwindow')
             }
-        else{
+        else if(shippingMethod === '' || shippingMethod === null || shippingMethod === undefined){
+            setErrorMessage('Please provide Shipping Method and try again.')
+        }
+        else if(paymentMethod === '' || paymentMethod === null || paymentMethod === undefined){
+            setErrorMessage('Please provide Payment Method and try again.')
+        }
+        else {
             setErrorMessage('Your cart is empty.')
         }
     }   
@@ -340,7 +380,7 @@ export default function CheckoutComponent() {
         return (
             <div style={{position:'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <BarcodeReader minLength={4} onScan={handleBarcode} onError={handleError}></BarcodeReader>
-                {errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
+                <br/>{errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>ORDER INFO</h1>
                 <form className={classes.root}>
                 <TextField
@@ -369,12 +409,14 @@ export default function CheckoutComponent() {
                 />
                 <TextField
                     id='standard-select-currency'
-                    select
+                    select 
+                    required={true}
                     label='Shipping Method'
                     value={shippingMethod}
                     style = {{width: '35%'}}
                     variant='standard'
-                    onChange={handleShippingChange}>
+                    onChange={handleShippingChange}
+                    error={shippingMethod === null || shippingMethod === undefined || shippingMethod === ''}>
                     {shippingMethodList.map((option) => {
                         return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                     })}
@@ -382,11 +424,13 @@ export default function CheckoutComponent() {
                 <TextField
                     id='standard-select-currency'
                     select
+                    required={true}
                     label='Payment Method'
                     value={paymentMethod}
                     style = {{width: '35%'}}
                     variant='standard'
-                    onChange={handlePaymentMethod}>
+                    onChange={handlePaymentMethod}
+                    error={paymentMethod === null || paymentMethod === undefined || paymentMethod === ''}>
                     {paymentMethodList.map((option) => {
                         return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                     })}
@@ -427,8 +471,20 @@ export default function CheckoutComponent() {
                      <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Subtotal: ${subtotal}</h5>
                      <h5 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Sale Tax ({taxRate}%): ${(Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100}</h5>
                      {coupon && <h5 style={{paddingLeft: '70%', fontWeight: 'bolder'}}>Coupon ({coupon}): $0</h5>}
+                     {customShippingMethod && <div style={{paddingLeft: '70%', width: '100%'}}>
+                        <TextField
+                            variant='standard'
+                            name='customShippingPrice'
+                            label='Shipping Cost'
+                            value={shippingCost}
+                            style ={{width: '15%'}}
+                            error={shippingCost <= 0}
+                            type='number'
+                            onChange={handleShippingCost}
+                        /> </div>
+                     }
                      {shippingCost !== 0 && <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Shipping ({shippingMethod}): ${shippingCost}</h5>}
-                     {shippingCost !== 0 ? <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100) + Number(shippingCost)}</h4> : <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100)}</h4>}
+                     {shippingCost !== 0 ? <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${((Math.round((((taxRate/100) * subtotal + subtotal + Number(shippingCost)) + Number.EPSILON) * 100)) / 100)}</h4> : <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${(subtotal + ((Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100)) / 100))}</h4>}
                      <Row className='buttonGroup'>
                          <Col><Button variant='outlined' onClick={handleCheckout}>CHECK OUT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleCheckoutAndPrint}>CHECK OUT AND PRINT</Button></Col>

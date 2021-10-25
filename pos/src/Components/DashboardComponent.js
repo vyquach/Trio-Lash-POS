@@ -11,6 +11,13 @@ export default function DashboardComponent() {
         revenue: 0,
         commission: 0,
     })
+    const [mostRecentOrder, setMostRecentOrder] = useState({
+        orderNum: '',
+        date: '',
+        total: 0,
+        shippingMethod: '',
+        paymentMethod: '', 
+    })
     const [bestSeller, setBestSeller] = useState([])
     const { userInfo } = useAuth()
     const columns = [
@@ -25,6 +32,7 @@ export default function DashboardComponent() {
         getMonthlySummary()
         getLowQuantityItems()
         getBestSeller()
+        getMostRecentOrder()
     }, [])  // eslint-disable-line react-hooks/exhaustive-deps
     const getLowQuantityItems = () => {
         var temp = []
@@ -33,7 +41,7 @@ export default function DashboardComponent() {
         .get()
         .then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
-                if(doc.data().quantity <= 10){
+                if(doc.data().quantity <= 5){
                     temp.push(doc.data())
                 }
             })
@@ -94,8 +102,34 @@ export default function DashboardComponent() {
             setIsComplete(true)
         })
     }
+    const getMostRecentOrder = () => {
+        var temp = {
+            orderNum: '',
+            date: '',
+            total: 0,
+            shippingMethod: '',
+            paymentMethod: '', 
+        }
+        setIsComplete(false)
+        db.collection(userInfo.location).doc('Orders').collection('MostRecentOrder').doc('MostRecentOrder')
+        .get()
+        .then((querySnapshot) => {
+            console.log(querySnapshot.data())
+            if(querySnapshot.data() !== undefined && querySnapshot.data() !== null){
+                temp.orderNum = querySnapshot.data().orderNum
+                temp.date = querySnapshot.data().date
+                temp.total = querySnapshot.data().total
+                temp.shippingMethod = querySnapshot.data().shippingMethod
+                temp.paymentMethod = querySnapshot.data().paymentMethod
+                temp.location = querySnapshot.data().location
+                setMostRecentOrder(temp)
+            }
+            setIsComplete(true)
+        })
+    }
 
     if(isComplete){
+        console.log(mostRecentOrder)
         return (
             <div>
             <Row>
@@ -110,9 +144,19 @@ export default function DashboardComponent() {
                          <Col style={{paddingTop: '3%'}}>
                             <div style={{position: 'relative', backgroundColor: '#99CED3', padding: '3%'}}>
                             <h4 style={{fontWeight: 'bolder', color: 'white'}}>COMMISSION</h4>
-                            <h1 style={{fontWeight: 'bolder', color: 'white', textAlign: 'right', fontSize: '40px'}}>${(Math.round(monthlySummary.commission * 100) / 100).toFixed(2)}</h1>
+                            {monthlySummary.commission !== undefined ? <h1 style={{fontWeight: 'bolder', color: 'white', textAlign: 'right', fontSize: '40px'}}>${(Math.round(monthlySummary.commission * 100) / 100).toFixed(2)}</h1> : <h1 style={{fontWeight: 'bolder', color: 'white', textAlign: 'right', fontSize: '40px'}}>$0.00</h1>}
                             </div>
                          </Col>
+                         <Row style={{paddingTop: '3%', paddingLeft: '3.5%', paddingRight: '0', width: '48vw'}}>
+                            <div style={{position: 'relative', backgroundColor: '#C38D9E', padding: '3%', paddingTop: '3%'}}>
+                            <h4 style={{fontWeight: 'bolder', color: 'white'}}>MOST RECENT ORDER</h4>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Order Num:</span><span style={{float: 'right'}}>{mostRecentOrder.orderNum}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Date:</span><span style={{float: 'right'}}>{mostRecentOrder.date}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Payment Method:</span><span style={{float: 'right'}}>{mostRecentOrder.paymentMethod}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Shipping Method:</span><span style={{float: 'right'}}>{mostRecentOrder.shippingMethod}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '24px'}}><span style={{float: 'left'}}>Total: </span><span style={{float: 'right'}}>${mostRecentOrder.total}</span><br/></span>
+                            </div>
+                         </Row>
                     </Row>
                      <Row style={{paddingTop: '3%'}}>
                          <Col>
@@ -131,7 +175,7 @@ export default function DashboardComponent() {
                     </Row>
                 </Col>
                 <Col>
-                    <Row style={{paddingTop: '4.4%'}}>
+                    <Row style={{paddingTop: '4.1%'}}>
                         <div style={{ width: '34vw', maxHeight: 'fit-content', backgroundColor: '#86B3D1', padding: '2%'}}>
                             <h2 style={{fontWeight: 'bolder', color: 'white'}}>REVENUE SOURCE(S)</h2><br/>
                             {Object.keys(monthlySummary).map((key) => {
@@ -142,16 +186,16 @@ export default function DashboardComponent() {
                             })}
                             <hr/>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '50px', float: 'left'}}>REVENUE</span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '50px', float: 'right'}}>${monthlySummary.revenue}</span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '50px', float: 'right'}}>${monthlySummary.revenue.toFixed(2)}</span>
                         </div>
                     </Row>
                     <Row style={{paddingTop: '4%'}}>
                         <div style={{position: 'absolute', width: '34vw', maxHeight: 'fit-content', backgroundColor: '#8E8368', padding: '1%'}}>
                             <h2 style={{fontWeight: 'bolder', color: 'white'}}>BEST SELLER(S)</h2><hr/>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '20px'}}><span style={{float: 'left'}}>Name</span><span style={{float: 'right'}}>Units Sold</span><br/><br/></span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[0][0]}</span><span style={{float: 'right'}}>{bestSeller[0][1]} ({(Math.round((((bestSeller[0][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100}%)</span><br/><br/></span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[1][0]}</span><span style={{float: 'right'}}>{bestSeller[1][1]} ({(Math.round((((bestSeller[1][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100}%)</span><br/><br/></span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[2][0]}</span><span style={{float: 'right'}}>{bestSeller[2][1]} ({(Math.round((((bestSeller[2][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100}%)</span><br/><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[0][0]}</span><span style={{float: 'right'}}>{bestSeller[0][1]} ({((Math.round((((bestSeller[0][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100).toFixed(2)}%)</span><br/><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[1][0]}</span><span style={{float: 'right'}}>{bestSeller[1][1]} ({((Math.round((((bestSeller[1][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100).toFixed(2)}%)</span><br/><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '18px'}}><span style={{float: 'left'}}>{bestSeller[2][0]}</span><span style={{float: 'right'}}>{bestSeller[2][1]} ({((Math.round((((bestSeller[2][1] / bestSeller[3]) + Number.EPSILON) * 100)) / 100) * 100).toFixed(2)}%)</span><br/><br/></span>
                         </div>
                     </Row>
                 </Col>
