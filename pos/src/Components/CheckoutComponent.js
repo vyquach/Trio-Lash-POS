@@ -47,7 +47,12 @@ export default function CheckoutComponent() {
             const temp = {restock : 0, restockWSP: 0}
             const item = Object.assign(doc.data(), temp)
             setProducts(products =>[...products, item])
+            setErrorMessage('')
             })
+        })
+        .catch((err) => {
+            setErrorMessage('Unable to get the details of the inventory.')
+            console.log(err)
         })
         setIsComplete(true)
     }
@@ -63,6 +68,7 @@ export default function CheckoutComponent() {
                     temp.value = item
                     temp.label = item
                     newShippingList.push(temp)
+                    setErrorMessage('')
                 })
                 setShippingMethodList(newShippingList)
                 var paymentList = querySnapShot.data().paymentMethod
@@ -75,10 +81,19 @@ export default function CheckoutComponent() {
                 })
                 setPaymentMethodList(newPaymentList)
             })
+            .catch((err) => {
+                setErrorMessage('Unable to get monthly sale report.')
+                console.log(err)
+            })
             db.collection(userInfo.location).doc('Configuration')
             .get()
             .then((querySnapShot) => {
                 setTaxRate(Number(querySnapShot.data().taxRate))
+                setErrorMessage('')
+            })
+            .catch((err) => {
+                setErrorMessage('Unable to get the tax rate')
+                console.log(err)
             })
         }
         catch{
@@ -223,6 +238,13 @@ export default function CheckoutComponent() {
                         obj['commission'] = 0
                     }
                     db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).set(obj)
+                    .then(
+                        setErrorMessage('')
+                    )
+                    .catch((err) => {
+                        setErrorMessage('Unable to update Sale Summary.')
+                        console.log(err)
+                    })
                 }
                 else{
                     obj = querySnapshot.data()
@@ -237,24 +259,94 @@ export default function CheckoutComponent() {
                         obj[paymentMethod] = obj[paymentMethod] + subtotal
                     }
                     db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1)).update(obj)
+                    .then(
+                        setErrorMessage('')
+                    )
+                    .catch((err) => {
+                        setErrorMessage('Unable to update Sale Summary.')
+                        console.log(err)
+                    })
                 }
+            })
+            .catch((err) => {
+                setErrorMessage('Unable to update Sale Summary.')
+                console.log(err)
             })
             setIsComplete(false)
             db.collection(userInfo.location).doc('Orders').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(orderNum)).set(orderObj)
                 .then((docRef) => {
+                    db.collection(userInfo.location).doc('SalesSummary').collection('YearlyReport').doc('YearlyReport')
+                    .get()
+                    .then((querySnapshot) => {
+                        var obj = {}
+                        if(querySnapshot.data() === undefined){
+                            obj['revenue'] = subtotal
+                            obj[paymentMethod] = subtotal
+                            if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')){
+                                obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
+                            }
+                            else{
+                                obj['commission'] = 0
+                            }
+                            db.collection(userInfo.location).doc('SalesSummary').collection('YearlyReport').doc('YearlyReport').set(obj)
+                            .then(
+                                setErrorMessage('')
+                            )
+                            .catch((err) => {
+                                setErrorMessage('Unable to update Yearly Report.')
+                                console.log(err)
+                            })
+                        }
+                        else{
+                            obj = querySnapshot.data()
+                            obj['revenue'] = obj['revenue'] + subtotal
+                            if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
+                                obj['commission'] = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100 + obj['commission']
+                            }
+                            if(obj[paymentMethod] === undefined || obj[paymentMethod] === 0){
+                                obj[paymentMethod] = subtotal
+                            }
+                            else{
+                                obj[paymentMethod] = obj[paymentMethod] + subtotal
+                            }
+                            db.collection(userInfo.location).doc('SalesSummary').collection('YearlyReport').doc('YearlyReport').update(obj)
+                            .then(
+                                setErrorMessage('')
+                            )
+                            .catch((err) => {
+                                setErrorMessage('Unable to update Yearly Report.')
+                                console.log(err)
+                            })
+                        }
+                    })
+                    .catch((err) => {
+                        setErrorMessage('Unable to update Sale Summary.')
+                        console.log(err)
+                    })
                     db.collection(userInfo.location).doc('Orders').collection('MostRecentOrder').doc('MostRecentOrder').set(orderObj)
+                    .then(
+                        setErrorMessage('')
+                    )
+                    .catch((err) => {
+                        setErrorMessage('Unable to update Most Recent Order.')
+                        console.log(err)
+                    })
                     setIsComplete(true)
                     setErrorMessage('')
-                }).catch((error) => {
+                }).catch((err) => {
                     setErrorMessage('Unable to place the order. Please try again.')
+                    console.log(err)
             })
             checkoutItems.forEach((item) => {
                 products.forEach((product) => {
                     if(product.code === item.code){
-                        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(product.code).update(product).then(() => {
+                        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(product.code).update(product)
+                        .then(() => {
+                            setErrorMessage('')
                             setIsComplete(true)
-                        }).catch((error) => {
-                            console.log(error)
+                        }).catch((err) => {
+                            setErrorMessage('Unable to update the product: ' + product.code + ' in the inventory.')
+                            console.log(err)
                         })
                     }
                 })

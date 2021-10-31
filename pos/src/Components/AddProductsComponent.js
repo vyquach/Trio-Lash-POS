@@ -18,7 +18,12 @@ export default function AddProductsComponent() {
         .then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
             setProducts(products =>[...products, doc.data()])
+            setErrorMessage('')
             })
+        })
+        .catch((err) => {
+            setErrorMessage('Unable to get the details of the inventory.')
+            console.log(err)
         })
         setIsComplete(true)
     }
@@ -85,8 +90,9 @@ export default function AddProductsComponent() {
                 .then((docRef) => {
                     resetNewProducts()
                     setErrorMessage('')
-                }).catch((error) => {
+                }).catch((err) => {
                     setErrorMessage('Unable to update. Please try again.')
+                    console.log(err)
                 })
                 return mess
             })

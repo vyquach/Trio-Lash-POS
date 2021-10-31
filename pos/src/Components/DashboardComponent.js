@@ -14,7 +14,7 @@ export default function DashboardComponent() {
     const [mostRecentOrder, setMostRecentOrder] = useState({
         orderNum: '',
         date: '',
-        total: 0,
+        subtotal: 0,
         shippingMethod: '',
         paymentMethod: '', 
     })
@@ -114,11 +114,10 @@ export default function DashboardComponent() {
         db.collection(userInfo.location).doc('Orders').collection('MostRecentOrder').doc('MostRecentOrder')
         .get()
         .then((querySnapshot) => {
-            console.log(querySnapshot.data())
             if(querySnapshot.data() !== undefined && querySnapshot.data() !== null){
                 temp.orderNum = querySnapshot.data().orderNum
                 temp.date = querySnapshot.data().date
-                temp.total = querySnapshot.data().total
+                temp.subtotal = querySnapshot.data().subtotal
                 temp.shippingMethod = querySnapshot.data().shippingMethod
                 temp.paymentMethod = querySnapshot.data().paymentMethod
                 temp.location = querySnapshot.data().location
@@ -129,7 +128,6 @@ export default function DashboardComponent() {
     }
 
     if(isComplete){
-        console.log(mostRecentOrder)
         return (
             <div>
             <Row>
@@ -154,7 +152,7 @@ export default function DashboardComponent() {
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Date:</span><span style={{float: 'right'}}>{mostRecentOrder.date}</span><br/></span>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Payment Method:</span><span style={{float: 'right'}}>{mostRecentOrder.paymentMethod}</span><br/></span>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Shipping Method:</span><span style={{float: 'right'}}>{mostRecentOrder.shippingMethod}</span><br/></span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '24px'}}><span style={{float: 'left'}}>Total: </span><span style={{float: 'right'}}>${mostRecentOrder.total}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '24px'}}><span style={{float: 'left'}}>Subtotal: </span><span style={{float: 'right'}}>${mostRecentOrder.subtotal}</span><br/></span>
                             </div>
                          </Row>
                     </Row>

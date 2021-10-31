@@ -39,6 +39,10 @@ export default function UpdateExistingProducts() {
             const item = Object.assign(doc.data(), temp)
             setProducts(products =>[...products, item])
             })
+        })            
+        .catch((err) => {
+            setErrorMessage('Unable to get the details of the inventory.')
+            console.log(err)
         })
         setIsComplete(true)
     }
@@ -47,14 +51,18 @@ export default function UpdateExistingProducts() {
     }, [])  // eslint-disable-line react-hooks/exhaustive-deps
     const removeProduct = (code) => {
         setIsComplete(false)
-        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(code).delete().then(() => {
+        db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(code).delete()
+        .then(() => {
+            setErrorMessage('')
             setIsComplete(true)
-        }).catch((error) => {
-            console.log(error)
+        })
+        .catch((err) => {
+            setErrorMessage('Unable to remove the product from the inventory.')
+            console.log(err)
         })
     }
     const pushRestockHistory = (updatedRow) => {
-        let date = new Date();
+        let date = new Date()
         let currentDate = String(date.getMonth() + 1) + '-' + String(date.getDate()) + '-' + String(date.getFullYear())
         let obj = {
             code: updatedRow.code,
@@ -65,8 +73,7 @@ export default function UpdateExistingProducts() {
             restock: updatedRow.restock,
             restockWSP: updatedRow.restockWSP,
             date: currentDate }
-        var ref = db.collection(userInfo.location).doc('RestockHistory').collection('RestockHistory')
-        ref.doc(String(Date.now())).set(obj)
+        db.collection(userInfo.location).doc('RestockHistory').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(Date.now())).set(obj)
         .then((docRef) => {
             setIsComplete(true)
         }).catch((err) => {
@@ -114,8 +121,9 @@ export default function UpdateExistingProducts() {
                         getCurrentInventory()
                         setIsComplete(true)
                         setErrorMessage('')
-                    }).catch((error) => {
-                        console.log(error)
+                    }).catch((err) => {
+                        setErrorMessage('Unable to update the inventory.')
+                        console.log(err)
                     })
                 }
                 else{
@@ -123,9 +131,10 @@ export default function UpdateExistingProducts() {
                     db.collection(userInfo.location).doc('Inventory').collection('Inventory').doc(updatedRow.code).set(updatedRow)
                     .then((docRef) => {
                         setErrorMessage('')
-                    }).catch((error) => {
+                    })
+                    .catch((err) => {
                         setErrorMessage('Unable to update. Please try again.')
-                        console.log(error)
+                        console.log(err)
                     })
                     return
                 }
@@ -188,10 +197,10 @@ export default function UpdateExistingProducts() {
                 var ref = db.collection(userInfo.location).doc('Inventory').collection('Inventory')
                 ref.doc(newProduct.code).set(newProduct)
             .then((docRef) => {
-                    resetNewProducts()
-                    setNewProductErrorMessage('') 
+                resetNewProducts()
+                setNewProductErrorMessage('') 
             }).catch((err) => {
-                    setNewProductErrorMessage('Unable to update. Please try again.')
+                setNewProductErrorMessage('Unable to update. Please try again.')
                 console.log(err)
         })
             })
