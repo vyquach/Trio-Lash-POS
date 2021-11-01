@@ -1,16 +1,18 @@
 import React, { useState} from 'react'
-import StorefrontOutlinedIcon from '@material-ui/icons/StorefrontOutlined';
-import LocalGroceryStoreOutlinedIcon from '@material-ui/icons/LocalGroceryStoreOutlined';
-import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined';
-import DashboardOutlinedIcon from '@material-ui/icons/DashboardOutlined';
-import CompareArrowsOutlinedIcon from '@material-ui/icons/CompareArrowsOutlined';
+import StorefrontOutlinedIcon from '@material-ui/icons/StorefrontOutlined'
+import LocalGroceryStoreOutlinedIcon from '@material-ui/icons/LocalGroceryStoreOutlined'
+import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined'
+import DashboardOutlinedIcon from '@material-ui/icons/DashboardOutlined'
+import CompareArrowsOutlinedIcon from '@material-ui/icons/CompareArrowsOutlined'
+import SearchOutlinedIcon from '@material-ui/icons/SearchOutlined'
 import {useAuth} from '../Context/AuthContext'
-import { useHistory } from 'react-router-dom';
-import { Col, Row } from 'reactstrap';
+import { useHistory } from 'react-router-dom'
+import { Col, Row } from 'reactstrap'
 import UpdateInventory from '../Components/UpdateInventory'
-import CheckoutComponent from '../Components/CheckoutComponent';
+import CheckoutComponent from '../Components/CheckoutComponent'
 import DashboardComponent from '../Components/DashBoardComponent'
-import RefundComponent from '../Components/RefundComponent';
+import RefundComponent from '../Components/RefundComponent'
+import SearchComponent from '../Components/SearchComponent'
 
 export default function Home() {
 
@@ -20,6 +22,7 @@ export default function Home() {
     const [updateInventory, setUpdateInventory] = useState(false)
     const [checkout, setCheckout] = useState(true)
     const [refund, setRefund] = useState(false)
+    const [search, setSearch] = useState(false)
 
     document.title = "Home | Trio Lash"
 
@@ -36,24 +39,35 @@ export default function Home() {
         setUpdateInventory(false)
         setCheckout(false)
         setRefund(false)
+        setSearch(false)
     }
     function handleUpdateInventory(){
         setDashboard(false)
         setUpdateInventory(true)
         setCheckout(false)
         setRefund(false)
+        setSearch(false)
     }
     function handleCheckout(){
         setDashboard(false)
         setUpdateInventory(false)
         setCheckout(true)
         setRefund(false)
+        setSearch(false)
     }
     function handleRefund(){
         setDashboard(false)
         setUpdateInventory(false)
         setCheckout(false)
         setRefund(true)
+        setSearch(false)
+    }
+    function handleSearch(){
+        setDashboard(false)
+        setUpdateInventory(false)
+        setCheckout(false)
+        setRefund(false)
+        setSearch(true)
     }
 
     if(userInfo.type === 'admin'){
@@ -96,6 +110,14 @@ export default function Home() {
                                 <div id='icon'><CompareArrowsOutlinedIcon/></div>
                                 <div id='title'>REFUND - LOST/DAMAGE</div>
                             </li>}
+                            {search ? <li id={'search'} className='row' onClick={handleSearch}>
+                                <div id='icon'><SearchOutlinedIcon/></div>
+                                <div id='title'>SEARCH</div>
+                            </li> :
+                            <li className='row' onClick={handleSearch}>
+                                <div id='icon'><SearchOutlinedIcon/></div>
+                                <div id='title'>SEARCH</div>
+                            </li>}
                             <li id={'logout'} className='row' onClick={handleLogOut}>
                                 <div id='icon'><ExitToAppOutlinedIcon/></div>
                                 <div id='title'>LOGOUT</div>
@@ -109,6 +131,7 @@ export default function Home() {
                         {checkout && <CheckoutComponent/>}
                         {dashboard && <DashboardComponent/>}
                         {refund && <RefundComponent/>}
+                        {search && <SearchComponent/>}
                     </div>
                 </Col>
             </Row>

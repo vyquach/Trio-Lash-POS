@@ -82,7 +82,7 @@ export default function CheckoutComponent() {
                 setPaymentMethodList(newPaymentList)
             })
             .catch((err) => {
-                setErrorMessage('Unable to get monthly sale report.')
+                setErrorMessage('Unable to get Monthly Sale Report.')
                 console.log(err)
             })
             db.collection(userInfo.location).doc('Configuration')
@@ -92,7 +92,7 @@ export default function CheckoutComponent() {
                 setErrorMessage('')
             })
             .catch((err) => {
-                setErrorMessage('Unable to get the tax rate')
+                setErrorMessage('Unable to get the Tax Rate')
                 console.log(err)
             })
         }
@@ -475,58 +475,58 @@ export default function CheckoutComponent() {
                 <br/>{errorMessage && <Alert color='danger'>{errorMessage}</Alert>}
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>ORDER INFO</h1>
                 <form className={classes.root}>
-                <TextField
-                    variant='standard'
-                    name='firstName'
-                    label='First Name'
-                    value={firstName}
-                    style ={{width: '18%'}}
-                    onChange={handleFirstName}
-                />
-                <TextField
-                    variant='standard'
-                    name='lastName'
-                    label='Last Name'
-                    value={lastName}
-                    style ={{width: '18%'}}
-                    onChange={handleLastName}
-                /><br/>
-                <TextField
-                    variant='standard'
-                    name='coupon'
-                    label='Coupon'
-                    value={coupon}
-                    style ={{width: '18%'}}
-                    onChange={handleCoupon}
-                />
-                <TextField
-                    id='standard-select-currency'
-                    select 
-                    required={true}
-                    label='Shipping Method'
-                    value={shippingMethod}
-                    style = {{width: '35%'}}
-                    variant='standard'
-                    onChange={handleShippingChange}
-                    error={shippingMethod === null || shippingMethod === undefined || shippingMethod === ''}>
-                    {shippingMethodList.map((option) => {
-                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                    })}
-                </TextField>
-                <TextField
-                    id='standard-select-currency'
-                    select
-                    required={true}
-                    label='Payment Method'
-                    value={paymentMethod}
-                    style = {{width: '35%'}}
-                    variant='standard'
-                    onChange={handlePaymentMethod}
-                    error={paymentMethod === null || paymentMethod === undefined || paymentMethod === ''}>
-                    {paymentMethodList.map((option) => {
-                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                    })}
-                </TextField>
+                    <TextField
+                        variant='standard'
+                        name='firstName'
+                        label='First Name'
+                        value={firstName}
+                        style ={{width: '18%'}}
+                        onChange={handleFirstName}
+                    />
+                    <TextField
+                        variant='standard'
+                        name='lastName'
+                        label='Last Name'
+                        value={lastName}
+                        style ={{width: '18%'}}
+                        onChange={handleLastName}
+                    /><br/>
+                    <TextField
+                        variant='standard'
+                        name='coupon'
+                        label='Coupon'
+                        value={coupon}
+                        style ={{width: '18%'}}
+                        onChange={handleCoupon}
+                    />
+                    <TextField
+                        id='standard-select-currency'
+                        select 
+                        required={true}
+                        label='Shipping Method'
+                        value={shippingMethod}
+                        style = {{width: '35%'}}
+                        variant='standard'
+                        onChange={handleShippingChange}
+                        error={shippingMethod === null || shippingMethod === undefined || shippingMethod === ''}>
+                        {shippingMethodList.map((option) => {
+                            return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                        })}
+                    </TextField>
+                    <TextField
+                        id='standard-select-currency'
+                        select
+                        required={true}
+                        label='Payment Method'
+                        value={paymentMethod}
+                        style = {{width: '35%'}}
+                        variant='standard'
+                        onChange={handlePaymentMethod}
+                        error={paymentMethod === null || paymentMethod === undefined || paymentMethod === ''}>
+                        {paymentMethodList.map((option) => {
+                            return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                        })}
+                    </TextField>
                 </form>
                 <br/><br/><hr/>
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>CART</h1>

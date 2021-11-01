@@ -39,6 +39,7 @@ export default function LogInFormComponent() {
                 })
                 setLocationList(newLocationList)
                 setIsComplete(true)
+                setErrorMessage('')
             })
         }
         catch{

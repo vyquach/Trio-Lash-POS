@@ -167,7 +167,7 @@ export default function DashboardComponent() {
                                          actionsColumnIndex:-1, addRowPosition:'first', pageSize:6, pageSizeOptions:[6,8,10,15], color: 'white'
                                      }}
                                      style={{width: '45vw'}}
-                                 />
+                                 /><br/>
                              </div>
                         </Col>
                     </Row>

@@ -2,8 +2,7 @@ import React, {useState, useEffect} from 'react'
 import MaterialTable from 'material-table'
 import { db } from '../firebase'
 import {useAuth} from '../Context/AuthContext'
-import { makeStyles, TextField, MenuItem } from '@material-ui/core'
-import { Button } from '@material-ui/core'
+import { makeStyles, TextField, MenuItem, Button } from '@material-ui/core'
 import { Row, Col, Alert, Label, Input } from 'reactstrap'
 
 export default function RefundComponent() {
@@ -95,7 +94,6 @@ export default function RefundComponent() {
             .get()
             .then((querySnapshot) => {
                 if(querySnapshot.data() !== undefined && querySnapshot.data() !== null && querySnapshot.data().status === 'complete'){
-                    console.log(querySnapshot.data())
                     setOrder(querySnapshot.data())
                     setErrorMessage('')
                 }
@@ -210,7 +208,7 @@ export default function RefundComponent() {
                 }
             })
         })
-        db.collection(userInfo.location).doc('Lost/DefectionReport').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(Date.now())).set(obj)
+        db.collection(userInfo.location).doc('LostAndDefectionReport').collection(String(date.getMonth() + 1) + String(date.getFullYear())).doc(String(Date.now())).set(obj)
         .then(
             clearDefectedItem()
         ).catch((err) => {

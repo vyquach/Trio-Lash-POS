@@ -64,7 +64,7 @@
 
 .sidebarList .row {
     width: 100%;
-    height: 100px;
+    height: 90px;
     list-style-type: none;
     margin: 0%;
     display: flex;
@@ -91,7 +91,7 @@
     flex: 70%;
 }
 
-#dashboard, #updateInventory, #checkout, #refund {
+#dashboard, #updateInventory, #checkout, #refund, #search {
     background-color: #5F6366; 
 }
 
