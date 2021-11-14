@@ -223,7 +223,7 @@ export default function UpdateExistingProducts() {
         }
     }
 
-    if(isComplete)
+    if(isComplete){
         return (
             <div style={{position: 'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>RESTOCK AND EDIT PRODUCT(S)</h1>
@@ -349,6 +349,7 @@ export default function UpdateExistingProducts() {
                     </div>
             </div>
         )
+    }
     else {
         return(
             <div></div>

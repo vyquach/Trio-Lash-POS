@@ -1,9 +1,10 @@
-import React, {useState} from 'react'
+import React, {useState, useRef} from 'react'
 import { makeStyles, TextField, MenuItem, Button } from '@material-ui/core'
 import { Label, Alert, Input, Row, Col } from 'reactstrap'
 import MaterialTable from 'material-table'
 import { db } from '../firebase'
 import {useAuth} from '../Context/AuthContext'
+import { CSVLink } from 'react-csv'
 
 export default function SearchComponent() {
     const [orderList, setOrderList] = useState([])
@@ -17,6 +18,8 @@ export default function SearchComponent() {
     const [isComplete, setIsComplete] = useState(true)
     const { userInfo } = useAuth()
     const [option, setOption] = useState('')
+    const [data, setData] = useState([])
+    const csvLink = useRef()
     const options = [
         {value: 'orderRecords', label: 'Order Record(s)'},
         {value: 'restockRecords', label: 'Restock Record(s)'},
@@ -211,6 +214,50 @@ export default function SearchComponent() {
         }
         setDate('')
     }
+    const getExcelData = async () => {
+        if(date === null || date === undefined || date.length === 0 || option === null || option === undefined || option.length === 0){
+            setErrorMessage('Please provide valid Date and Type of Reports.')
+        }
+        else{
+            await db.collection(userInfo.location).doc('Orders').collection(date)
+            .get()
+            .then((querySnapshot) => {
+                var excelData = []
+                var temp = {}
+                var index = 1
+                if(querySnapshot.docs !== undefined && querySnapshot.docs !== null){
+                    querySnapshot.docs.forEach((item) => {
+                        temp['num'] = index
+                        temp['orderNum'] = item.data().orderNum
+                        var dateArr = item.data().date.split('-')
+                        temp['date'] =  dateArr[2] + '.' + dateArr[1] + '.' + dateArr[0]
+                        temp['status'] = item.data().status 
+                        temp['shippingMethod'] = item.data().shippingMethod
+                        temp['shippingCost'] = item.data().shippingCost
+                        temp['coupon'] = -item.data().coupon
+                        temp['commission'] = item.data().commission
+                        temp['total'] = item.data().total
+                        Object.keys(item.data().paymentMethod).forEach((each) => {
+                            temp[each] = item.data().paymentMethod[each]
+                        })
+                        excelData.push(temp)
+                        temp = {}
+                        index += 1
+                    })
+                    setData(excelData)
+                }
+                else{
+                    setErrorMessage('Cannot retrieve Order Record(s). Please try again.')
+                }
+                setErrorMessage('')
+                csvLink.current.link.click()
+            })
+            .catch((err) => {
+                setErrorMessage('Unable to get Order Record(s).')
+                console.log(err)
+            })
+        }
+    }
     if(isComplete){
         return(
             <div style={{position: 'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
@@ -248,7 +295,21 @@ export default function SearchComponent() {
                     </Col>
                 </Row>
                 <div className='buttonGroup'>
-                <Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>SEARCH</Button>
+                    <Row>
+                        <Col>
+                            <Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={handleSubmit}>SEARCH</Button>
+                        </Col>
+                        <Col>
+                            <Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={getExcelData}>Export to EXCEL</Button>
+                            <CSVLink
+                                data={data}
+                                filename={date + '-Report.csv'}
+                                ref={csvLink}
+                                target='_blank'
+                                className='hidden'
+                            />
+                        </Col>
+                    </Row>
                 </div>
                 {(option === 'orderRecords') && <MaterialTable
                     columns={orderColumns}

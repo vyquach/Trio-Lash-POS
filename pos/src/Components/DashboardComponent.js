@@ -108,7 +108,8 @@ export default function DashboardComponent() {
             date: '',
             total: 0,
             shippingMethod: '',
-            paymentMethod: '', 
+            paymentMethod: '',
+            totalItems: 0 
         }
         setIsComplete(false)
         db.collection(userInfo.location).doc('Orders').collection('MostRecentOrder').doc('MostRecentOrder')
@@ -119,8 +120,26 @@ export default function DashboardComponent() {
                 temp.date = querySnapshot.data().date
                 temp.subtotal = querySnapshot.data().subtotal
                 temp.shippingMethod = querySnapshot.data().shippingMethod
-                temp.paymentMethod = querySnapshot.data().paymentMethod
                 temp.location = querySnapshot.data().location
+                querySnapshot.data().items.forEach((item) => {
+                    temp.totalItems += item.quantity
+                })
+                var payment = ''
+                var isSplitted = false
+                Object.keys(querySnapshot.data().paymentMethod).forEach((item) => {
+                    if(querySnapshot.data().paymentMethod[item] !== 0 && payment !== ''){
+                        isSplitted = true
+                    } 
+                    else if(querySnapshot.data().paymentMethod[item] !== 0){
+                        payment = item
+                    }
+                })
+                if(isSplitted){
+                    temp.paymentMethod = 'Splitted'
+                }
+                else{
+                    temp.paymentMethod = payment
+                }
                 setMostRecentOrder(temp)
             }
             setIsComplete(true)
@@ -150,8 +169,9 @@ export default function DashboardComponent() {
                             <h4 style={{fontWeight: 'bolder', color: 'white'}}>MOST RECENT ORDER</h4>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Order Num:</span><span style={{float: 'right'}}>{mostRecentOrder.orderNum}</span><br/></span>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Date:</span><span style={{float: 'right'}}>{mostRecentOrder.date}</span><br/></span>
-                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Payment Method:</span><span style={{float: 'right'}}>{mostRecentOrder.paymentMethod}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Payment Method(s): </span><span style={{float: 'right'}}>{mostRecentOrder.paymentMethod}</span><br/></span>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Shipping Method:</span><span style={{float: 'right'}}>{mostRecentOrder.shippingMethod}</span><br/></span>
+                            <span style={{fontWeight: 'bolder', color: 'white', fontSize: '15px'}}><span style={{float: 'left'}}>Total Item(s) Sold: </span><span style={{float: 'right'}}>{mostRecentOrder.totalItems}</span><br/></span>
                             <span style={{fontWeight: 'bolder', color: 'white', fontSize: '24px'}}><span style={{float: 'left'}}>Subtotal: </span><span style={{float: 'right'}}>${mostRecentOrder.subtotal}</span><br/></span>
                             </div>
                          </Row>

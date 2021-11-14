@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom'
 import { Col, Row } from 'reactstrap'
 import UpdateInventory from '../Components/UpdateInventory'
 import CheckoutComponent from '../Components/CheckoutComponent'
-import DashboardComponent from '../Components/DashBoardComponent'
+import DashboardComponent from '../Components/DashboardComponent'
 import RefundComponent from '../Components/RefundComponent'
 import SearchComponent from '../Components/SearchComponent'
 
@@ -112,11 +112,11 @@ export default function Home() {
                             </li>}
                             {search ? <li id={'search'} className='row' onClick={handleSearch}>
                                 <div id='icon'><SearchOutlinedIcon/></div>
-                                <div id='title'>SEARCH</div>
+                                <div id='title'>SEARCH - REPORT</div>
                             </li> :
                             <li className='row' onClick={handleSearch}>
                                 <div id='icon'><SearchOutlinedIcon/></div>
-                                <div id='title'>SEARCH</div>
+                                <div id='title'>SEARCH - REPORT</div>
                             </li>}
                             <li id={'logout'} className='row' onClick={handleLogOut}>
                                 <div id='icon'><ExitToAppOutlinedIcon/></div>
