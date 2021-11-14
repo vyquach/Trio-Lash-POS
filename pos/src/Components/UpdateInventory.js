@@ -290,7 +290,7 @@ export default function UpdateExistingProducts() {
                                 label='Description'
                                 value={newProduct.description}
                                 multiline={true}
-                                style ={{width: '28%'}}
+                                style ={{width: '24%'}}
                                 onChange={event => handleChangeInput(index, event, 'description')}
                             />
                             <TextField

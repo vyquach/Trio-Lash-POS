@@ -15,6 +15,7 @@ export default function SearchComponent() {
     const [month, setMonth] = useState('')
     const [date, setDate] = useState('')
     const [errorMessage, setErrorMessage] = useState('')
+    const [totalPayment, setTotalPayment] = useState({})
     const [isComplete, setIsComplete] = useState(true)
     const { userInfo } = useAuth()
     const [option, setOption] = useState('')
@@ -215,7 +216,7 @@ export default function SearchComponent() {
         setDate('')
     }
     const getExcelData = async () => {
-        if(date === null || date === undefined || date.length === 0 || option === null || option === undefined || option.length === 0){
+        if(date === null || date === undefined || date.length === 0){
             setErrorMessage('Please provide valid Date and Type of Reports.')
         }
         else{
@@ -225,26 +226,56 @@ export default function SearchComponent() {
                 var excelData = []
                 var temp = {}
                 var index = 1
+                var revenue = 0
+                var total = 0
+                var commission = 0
+                var coupon = 0
+                var shippingCost = 0 
+                var buffer = totalPayment
                 if(querySnapshot.docs !== undefined && querySnapshot.docs !== null){
                     querySnapshot.docs.forEach((item) => {
-                        temp['num'] = index
-                        temp['orderNum'] = item.data().orderNum
+                        temp['#'] = index
+                        temp['Order #'] = item.data().orderNum
                         var dateArr = item.data().date.split('-')
-                        temp['date'] =  dateArr[2] + '.' + dateArr[1] + '.' + dateArr[0]
-                        temp['status'] = item.data().status 
-                        temp['shippingMethod'] = item.data().shippingMethod
-                        temp['shippingCost'] = item.data().shippingCost
-                        temp['coupon'] = -item.data().coupon
-                        temp['commission'] = item.data().commission
-                        temp['total'] = item.data().total
+                        temp['Date'] =  dateArr[2] + '.' + dateArr[1] + '.' + dateArr[0]
+                        temp['Status'] = item.data().status 
+                        temp['Shipping Method'] = item.data().shippingMethod
+                        temp['Shipping Cost'] = item.data().shippingCost
+                        shippingCost += item.data().shippingCost
+                        temp['Coupon'] = -item.data().coupon
+                        coupon += -item.data().coupon
+                        temp['Commission'] = item.data().commission
+                        commission += item.data().commission
                         Object.keys(item.data().paymentMethod).forEach((each) => {
                             temp[each] = item.data().paymentMethod[each]
+                            if (each in buffer){
+                                buffer[each] += item.data().paymentMethod[each]
+                            }
+                            else{
+                                buffer[each] = item.data().paymentMethod[each]
+                            }
                         })
+                        temp['Total'] = item.data().total
+                        total += item.data().total
+                        temp['Revenue'] = item.data().subtotal
+                        revenue += item.data().subtotal
                         excelData.push(temp)
                         temp = {}
                         index += 1
                     })
+                    temp = {}
+                    temp['#'] = 'TOTAL'
+                    temp['Shipping Cost'] = shippingCost
+                    temp['Coupon'] = coupon
+                    temp['Commission'] = commission
+                    temp['Total'] = total
+                    temp['Revenue'] = revenue
+                    Object.keys(buffer).forEach((each) => {
+                        temp[each] = buffer[each]
+                    })
+                    excelData.push(temp)
                     setData(excelData)
+                    setTotalPayment(buffer)
                 }
                 else{
                     setErrorMessage('Cannot retrieve Order Record(s). Please try again.')
