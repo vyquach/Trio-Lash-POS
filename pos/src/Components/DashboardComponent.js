@@ -74,13 +74,13 @@ export default function DashboardComponent() {
                         temp = {quantity: obj.quantity, revenue: obj.subtotal}
                     }
                     else{
-                        temp = {quantity: obj.quantity + sales[key].quantity, revenue: obj.subtotal + sales[key].revenue}
+                        temp = {quantity: Number(obj.quantity) + Number(sales[key].quantity), revenue: obj.subtotal + sales[key].revenue}
                     }
                     sales[key] = temp
                 })
             })
             for(const [key, value] of Object.entries(sales)){
-                itemSold += value.quantity
+                itemSold += Number(value.quantity)
                 if(key !== null){}
             }
             for(let i = 0; i < 3; i++){

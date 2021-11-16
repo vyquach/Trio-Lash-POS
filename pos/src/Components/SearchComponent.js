@@ -216,10 +216,10 @@ export default function SearchComponent() {
         setDate('')
     }
     const getExcelData = async () => {
-        if(date === null || date === undefined || date.length === 0){
+        if(date === null || date === undefined || date.length === 0 || option === null || option === undefined || option.length === 0){
             setErrorMessage('Please provide valid Date and Type of Reports.')
         }
-        else{
+        else if(option === 'orderRecords'){
             await db.collection(userInfo.location).doc('Orders').collection(date)
             .get()
             .then((querySnapshot) => {
@@ -228,6 +228,7 @@ export default function SearchComponent() {
                 var index = 1
                 var revenue = 0
                 var total = 0
+                var tax = 0
                 var commission = 0
                 var coupon = 0
                 var shippingCost = 0 
@@ -255,6 +256,8 @@ export default function SearchComponent() {
                                 buffer[each] = item.data().paymentMethod[each]
                             }
                         })
+                        temp['Tax'] = item.data().tax
+                        tax += item.data().tax
                         temp['Total'] = item.data().total
                         total += item.data().total
                         temp['Revenue'] = item.data().subtotal
@@ -268,6 +271,7 @@ export default function SearchComponent() {
                     temp['Shipping Cost'] = shippingCost
                     temp['Coupon'] = coupon
                     temp['Commission'] = commission
+                    temp['Tax'] = tax
                     temp['Total'] = total
                     temp['Revenue'] = revenue
                     Object.keys(buffer).forEach((each) => {
@@ -285,6 +289,40 @@ export default function SearchComponent() {
             })
             .catch((err) => {
                 setErrorMessage('Unable to get Order Record(s).')
+                console.log(err)
+            })
+        }
+        else if('restockRecords'){
+            await db.collection(userInfo.location).doc('RestockHistory').collection(date)
+            .get()
+            .then((querySnapshot) => {
+                var excelData = []
+                var temp = {}
+                var index = 1
+                if(querySnapshot.docs !== undefined && querySnapshot.docs !== null){
+                    querySnapshot.docs.forEach((item) => {
+                        temp['#'] = index
+                        var dateArr = item.data().date.split('-')
+                        temp['Date'] =  dateArr[2] + '.' + dateArr[1] + '.' + dateArr[0]
+                        temp['Code'] = item.data().code
+                        temp['Name'] = item.data().name
+                        temp['Description'] = item.data().description
+                        temp['Ventor'] = item.data().ventor
+                        temp['Price'] = item.data().price
+                        temp['Restock Qty'] = item.data().restock
+                        temp['Restock WSP'] = item.data().restockWSP
+                        excelData.push(temp)
+                    })
+                    setData(excelData)
+                }
+                else{
+                    setErrorMessage('Cannot retrieve Restock History. Please try again.')
+                }
+                setErrorMessage('')
+                csvLink.current.link.click()
+            })
+            .catch((err) => {
+                setErrorMessage('Unable to get Restock History.')
                 console.log(err)
             })
         }
@@ -334,7 +372,7 @@ export default function SearchComponent() {
                             <Button style={{backgroundColor:'#FFFFFF', color:'#19181A'}} variant='outlined' onClick={getExcelData}>Export to EXCEL</Button>
                             <CSVLink
                                 data={data}
-                                filename={date + '-Report.csv'}
+                                filename={date + '-' + userInfo.location + '-' +  option + '.csv'}
                                 ref={csvLink}
                                 target='_blank'
                                 className='hidden'

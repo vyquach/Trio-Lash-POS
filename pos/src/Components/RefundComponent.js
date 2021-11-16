@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react'
 import MaterialTable from 'material-table'
 import { db } from '../firebase'
 import {useAuth} from '../Context/AuthContext'
-import { makeStyles, TextField, MenuItem, Button } from '@material-ui/core'
+import { makeStyles, TextField, MenuItem, Button, InputAdornment } from '@material-ui/core'
 import { Row, Col, Alert, Label, Input } from 'reactstrap'
 
 export default function RefundComponent() {
@@ -12,7 +12,7 @@ export default function RefundComponent() {
     const [orderDate, setOrderDate] = useState('')
     const [order, setOrder] = useState({})
     const [errorMessage, setErrorMessage] = useState('')
-    const [refundAmount, setRefundAmount] = useState()
+    const [refundAmount, setRefundAmount] = useState({})
     const [codesList, setCodesList] = useState([])
     const [selectedItem, setSelectedItem] = useState('')
     const [lostQuantity, setLostQuantity] = useState(0)
@@ -94,7 +94,13 @@ export default function RefundComponent() {
             .get()
             .then((querySnapshot) => {
                 if(querySnapshot.data() !== undefined && querySnapshot.data() !== null && querySnapshot.data().status === 'complete'){
+                    console.log(querySnapshot.data())
                     setOrder(querySnapshot.data())
+                    var temp = {}
+                    Object.keys(querySnapshot.data().paymentMethod).forEach((item) => {
+                        temp[item] = 0
+                    })
+                    setRefundAmount(temp)
                     setErrorMessage('')
                 }
                 else{
@@ -122,12 +128,17 @@ export default function RefundComponent() {
             db.collection(userInfo.location).doc('SalesSummary').collection(year).doc(month)
             .get()
             .then((querySnapshot) => {
-                var newSummary = querySnapshot.data()
+                var newSummary= querySnapshot.data()
+                console.log(newSummary)
                 newSummary.revenue -= refundAmount
                 if(userInfo.type === 'user' && (order.shippingMethod === 'In-person' || order.shippingMethod === 'Next-day')){
                     newSummary.commission -= order.commission
                 }
-                newSummary[order.paymentMethod] -= refundAmount
+                //newSummary[order.paymentMethod] -= refundAmount
+                var paymentList = order.paymentMethod
+                Object.keys(paymentList).forEach((item) => {
+
+                })
                 db.collection(userInfo.location).doc('SalesSummary').collection(year).doc(month).update(newSummary)
                 var refundObj = {}
                 var date = new Date()
@@ -152,8 +163,14 @@ export default function RefundComponent() {
         }
         setIsComplete(true)
     }
-    const handleChangeRefundAmount = (event) => {
-        setRefundAmount(Number(event.target.value))
+    const handleChangeRefundAmount = (event, paymentMethod) => {
+        if(Number(event.target.value) < 0 || Number(event.target.value) > order.paymentMethod[paymentMethod]){
+            setErrorMessage('The Refund Amount exceeds the paid amount. Please try again.')
+        }
+        else{
+            refundAmount[paymentMethod] = Number(event.target.value)
+            setErrorMessage('')
+        }
     }
     const handleCodeChange = (event) => {
         setSelectedItem(event.target.value)
@@ -222,6 +239,7 @@ export default function RefundComponent() {
         setTotalLostCost(0)
     }
     if(isComplete){
+        console.log(refundAmount)
         return (
             <div style={{position: 'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>REFUND</h1>
@@ -266,26 +284,37 @@ export default function RefundComponent() {
                 <span>
                     <span style={{float: 'left'}}>
                         <h4 style={{fontWeight: 'bolder'}}>ORDER DETAILS:</h4>
-                        <h6>Date: {order.date}</h6>
+                        <h6>Date: {order.date}</h6><br/>
                         <h6>Shipping Method: {order.shippingMethod}</h6>
-                        <h6>Payment Method: {order.paymentMethod}</h6>
-                        <h6>Coupon(s) Applied: {order.coupon}</h6>
+                        <h6>Shipping Cost: ${order.shippingCost}</h6><br/>
+                        <h6>Payment Method:</h6>
+                        {Object.keys(order.paymentMethod).map((key) => {
+                            return <React.Fragment><h6>{key} : ${order.paymentMethod[key]}</h6></React.Fragment>
+                        })}
+                        <br/>
+                        <h6>Coupon(s) Applied: {order.coupon}</h6><br/>
                         <h6>Total: ${order.total}</h6>
                     </span>
                     <span style={{float: 'right'}}>
                         <h4 style={{fontWeight: 'bolder'}}>REFUND:</h4>
                         <form className={classes.root}>
-                            <TextField
-                                variant='standard'
-                                name='refundAmount'
-                                type='number'
-                                label='Amount'
-                                value={refundAmount}
-                                required={true}
-                                style={{width: '45%'}}
-                                onChange={event => handleChangeRefundAmount(event)}
-                                error={refundAmount === undefined || refundAmount === null || Number(refundAmount) <= 0 || Number(refundAmount) > order.total}
-                            />
+                            {Object.keys(order.paymentMethod).map((item) => {
+                                return <Row>
+                                    <TextField
+                                        variant='standard'
+                                        name={item + 'Amount'}
+                                        type='number'
+                                        label={item}
+                                        value={refundAmount[item]}
+                                        style={{width: '70%'}}
+                                        InputProps={{
+                                            startAdornment: <InputAdornment position='start'>$</InputAdornment>
+                                        }}
+                                        onChange={event => handleChangeRefundAmount(event, item)}
+                                        error={refundAmount === undefined || refundAmount === null || Number(refundAmount[item]) < 0 || Number(refundAmount[item]) > order.paymentMethod[item]}
+                                    />
+                                </Row>
+                            })}
                         </form>
                     </span>
                 </span>

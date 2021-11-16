@@ -34,11 +34,13 @@ export default function UpdateExistingProducts() {
         db.collection(userInfo.location).doc('Inventory').collection('Inventory')
         .get()
         .then((querySnapshot) => {
+            var newProductList = []
             querySnapshot.forEach((doc) => {
             const temp = {restock : 0, restockWSP: 0}
             const item = Object.assign(doc.data(), temp)
-            setProducts(products =>[...products, item])
+            newProductList.push(item)
             })
+            setProducts(newProductList)
         })            
         .catch((err) => {
             setErrorMessage('Unable to get the details of the inventory.')
@@ -246,12 +248,24 @@ export default function UpdateExistingProducts() {
                         onRowUpdate:(updatedRow, oldRow) => new Promise((resolve, reject) => {
                             const index = oldRow.tableData.id
                             const updatedInventory = [...products]
-                            updatedInventory[index] = updatedRow
-                            setTimeout(() => {
-                                setProducts(updatedInventory)
-                                updateProduct(updatedRow, oldRow)
+                            var exist = false
+                            products.forEach((each) => {
+                                if(each.code === updatedRow.code){
+                                    exist = true
+                                }
+                            })
+                            if(!exist){
+                                updatedInventory[index] = updatedRow
+                                setTimeout(() => {
+                                    setProducts(updatedInventory)
+                                    updateProduct(updatedRow, oldRow)
+                                    resolve()
+                                }, 2000)
+                            }
+                            else{
+                                setErrorMessage('The code ' + updatedRow.code + ' already exists in the inventory. Please provide a unique code.')
                                 resolve()
-                            }, 2000)
+                            }
                         })
                      }}
                      options={{

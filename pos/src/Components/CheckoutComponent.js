@@ -144,12 +144,10 @@ export default function CheckoutComponent() {
                         currentSubtotal += product.price
                         if(taxApplied && splitPaymentMethod['Credit-Debit Card'] !== 0){
                             currentTaxAmount = Math.round((((taxRate/100) * splitPaymentMethod['Credit-Debit Card']) + Number.EPSILON) * 100) /100
-                            console.log('in')
                             console.log(currentSubtotal)
                         }
                         else if(taxApplied && paymentMethod === 'Credit-Debit Card'){
                             currentTaxAmount = Math.round((((taxRate/100) * currentSubtotal) + Number.EPSILON) * 100) /100
-                            console.log('here')
                             console.log(currentSubtotal)
                         }
                         else{
@@ -237,7 +235,7 @@ export default function CheckoutComponent() {
         }
         else {
             if(updatedRow.code === oldRow.code && updatedRow.quantity !== oldRow.quantity){
-                currentSubTotal = updatedRow.quantity * updatedRow.price
+                currentSubTotal = updatedRow.quantity * updatedRow.price - oldRow.quantity * oldRow.price + subtotal
                 if(taxApplied && splitPaymentMethod['Credit-Debit Card'] !== 0){
                     currentTaxAmount = Math.round((((taxRate/100) * splitPaymentMethod['Credit-Debit Card']) + Number.EPSILON) * 100) /100
                 }
@@ -307,7 +305,7 @@ export default function CheckoutComponent() {
                 list.push({quantity: item.quantity, description: item.name, unitPrice: item.price, subtotal: (item.price * item.quantity)})
             })
             var orderObj = {orderNum: orderNum, date: orderDate, firstName: firstName, lastName: lastName, coupon: discountAmount, shippingMethod: shippingMethod, shippingCost: shippingCost, paymentMethod: splitPaymentMethod, location: userInfo.location, tax: taxAmount, subtotal: subtotal, total: total, commission: 0.0, status: 'complete', items: list}
-            if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping')) {
+            if(userInfo.type === 'user' && (shippingMethod !== 'USPS/UPS Shipping' && shippingMethod !== 'Custom')) {
                 orderObj.commission = (Math.round((((15/100) * subtotal) + Number.EPSILON) * 100)) / 100
             }
             db.collection(userInfo.location).doc('SalesSummary').collection(String(date.getFullYear())).doc(String(date.getMonth() + 1))
@@ -505,9 +503,15 @@ export default function CheckoutComponent() {
         else{
             setErrorMessage('')
             splitPaymentMethod[event.target.name] = Number(event.target.value)
-            if(taxApplied && event.target.name === 'Credit-Debit Card'){
+            if(taxApplied && event.target.name === 'Credit-Debit Card' && event.target.value === 0){
+                setTaxAmount(0)
+                setTotal(subtotal)
+            }
+            else if(taxApplied && event.target.name === 'Credit-Debit Card'){
                 var newTaxAmount =  Math.round((((taxRate/100) * splitPaymentMethod[event.target.name]) + Number.EPSILON) * 100) / 100
                 setTaxAmount(newTaxAmount)
+                var newTotal = total + newTaxAmount
+                setTotal(newTotal)
             }
         }
     }
