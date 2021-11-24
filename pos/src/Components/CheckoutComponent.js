@@ -230,16 +230,13 @@ export default function CheckoutComponent() {
     const updateProduct = (updatedRow, oldRow) => {
         var currentSubTotal = 0
         var currentTaxAmount = taxAmount
-        if(Number(updatedRow.quantity) <= 0 || ((Number(updatedRow.quantity) - Math.floor(Number(updatedRow.quantity))) !== 0)){
-            setErrorMessage('Invalid change. Please try again.')
+        if(Number(updatedRow.quantity) <= 0 || ((Number(updatedRow.quantity) - Math.floor(Number(updatedRow.quantity))) !== 0) || Number(updatedRow) > products[updatedRow.code]){
+            setErrorMessage('Invalid change/ the amount exceeds the inventory. Please try again.')
         }
         else {
             if(updatedRow.code === oldRow.code && updatedRow.quantity !== oldRow.quantity){
                 currentSubTotal = updatedRow.quantity * updatedRow.price - oldRow.quantity * oldRow.price + subtotal
-                if(taxApplied && splitPaymentMethod['Credit-Debit Card'] !== 0){
-                    currentTaxAmount = Math.round((((taxRate/100) * splitPaymentMethod['Credit-Debit Card']) + Number.EPSILON) * 100) /100
-                }
-                else if(taxApplied && paymentMethod === 'Credit-Debit Card'){
+                if(taxApplied && (splitPaymentMethod['Credit-Debit Card'] !== 0 || paymentMethod === 'Credit-Debit Card')){
                     currentTaxAmount = Math.round((((taxRate/100) * currentSubTotal) + Number.EPSILON) * 100) /100
                 }
                 else{
@@ -417,7 +414,7 @@ export default function CheckoutComponent() {
         setSplitPaymentMethod()
     }
     const handleShippingChange = (event) => {
-        var currentTotal = total
+        var currentTotal = subtotal +  taxAmount - discountAmount
         var newShippingCost = 0
         if(event.target.value === 'USPS/UPS Shipping'){
             newShippingCost = 7.95
@@ -432,16 +429,16 @@ export default function CheckoutComponent() {
             newShippingCost = 0
             setCustomShippingMethod(false)
         }
-        if(event.target.value !== 'USPS/UPS Shipping' && (shippingMethod === 'USPS/UPS Shipping' || shippingMethod === 'Custom')){
-            currentTotal -= shippingCost
-        }
+        //if(event.target.value !== 'USPS/UPS Shipping' && (shippingMethod === 'USPS/UPS Shipping' || shippingMethod === 'Custom')){
+        //    currentTotal -= shippingCost
+        //}
         setTotal(currentTotal)
         setShippingCost(newShippingCost)
         setShippingMethod(event.target.value)
     }
     const handlePaymentMethod = (event) => {
         var newPaymentMethod = event.target.value
-        var currentTotal = subtotal + shippingCost - discountAmount
+        var currentTotal = Math.round(((subtotal + shippingCost - discountAmount) + Number.EPSILON) * 100) / 100
         if(taxApplied && event.target.value === 'Credit-Debit Card'){
             var newTaxAmount = Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100) / 100
             currentTotal += newTaxAmount
@@ -478,12 +475,8 @@ export default function CheckoutComponent() {
         var currentTotal = subtotal + shippingCost - discountAmount
         setTaxApplied(!taxApplied)
         if(!taxApplied){
-            if(paymentMethod === 'Credit-Debit Card'){
+            if(paymentMethod === 'Credit-Debit Card' || (splitPayment && splitPaymentMethod['Credit-Debit Card'])){
                 currentTaxAmount = Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100) / 100
-                currentTotal += currentTaxAmount
-            }
-            else if(splitPayment && splitPaymentMethod['Credit-Debit Card']){
-                currentTaxAmount = Math.round((((taxRate/100) * splitPaymentMethod['Credit-Debit Card']) + Number.EPSILON) * 100) / 100
                 currentTotal += currentTaxAmount
             }
         }
@@ -492,12 +485,24 @@ export default function CheckoutComponent() {
     }
     const handleSplitPayment = () => {
         setSplitPayment(!splitPayment)
+        var newTotal = total - taxAmount
+        setTotal(newTotal)
         setTaxAmount(0)
         setPaymentMethod('')
     }
     const handleSplitPaymentAmount = (event) => {
         setErrorMessage('')
-        if(Number(event.target.value) <= 0){
+        var newTotal = 0
+        if(Number(event.target.value) <= 0 || event.target.value === null || event.target.value === undefined){
+            splitPaymentMethod[event.target.name] = 0
+            if(event.target.name === 'Credit-Debit Card'){
+                setTaxAmount(0)
+                newTotal = Math.round(((subtotal + shippingCost - discountAmount) + Number.EPSILON) * 100) / 100
+            }
+            else {
+                newTotal = Math.round(((subtotal + shippingCost + taxAmount - discountAmount) + Number.EPSILON) * 100) / 100
+            }
+            setTotal(newTotal)
             setErrorMessage('Please provide a valid Amount and try again.')
         }
         else{
@@ -505,12 +510,12 @@ export default function CheckoutComponent() {
             splitPaymentMethod[event.target.name] = Number(event.target.value)
             if(taxApplied && event.target.name === 'Credit-Debit Card' && event.target.value === 0){
                 setTaxAmount(0)
-                setTotal(subtotal)
+                setTotal(subtotal + shippingCost - discountAmount)
             }
             else if(taxApplied && event.target.name === 'Credit-Debit Card'){
-                var newTaxAmount =  Math.round((((taxRate/100) * splitPaymentMethod[event.target.name]) + Number.EPSILON) * 100) / 100
+                var newTaxAmount =  Math.round((((taxRate/100) * subtotal) + Number.EPSILON) * 100) / 100
                 setTaxAmount(newTaxAmount)
-                var newTotal = total + newTaxAmount
+                newTotal = Math.round(((subtotal + shippingCost + newTaxAmount - discountAmount) + Number.EPSILON) * 100) / 100
                 setTotal(newTotal)
             }
         }
@@ -814,7 +819,7 @@ export default function CheckoutComponent() {
                      <h5 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Sale Tax ({taxRate}%): ${taxAmount}</h5>
                      {discountAmount !== 0 && <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Discount Amount: -${discountAmount}</h5>}
                      {shippingCost !== 0 && <h5 style={{paddingTop: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Shipping ({shippingMethod}): ${shippingCost}</h5>}
-                     <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${total}</h4>
+                     <h4 style={{padding: '3%', paddingLeft: '70%', fontWeight: 'bolder'}}>Total: ${Math.round((total + Number.EPSILON) * 100) / 100}</h4>
                      <Row className='buttonGroup'>
                          <Col><Button variant='outlined' onClick={confirmCheckout}>CHECK OUT</Button></Col>
                          <Col><Button variant='outlined' onClick={handleClear}>CLEAR</Button></Col>

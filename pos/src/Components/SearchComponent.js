@@ -282,13 +282,56 @@ export default function SearchComponent() {
                     setTotalPayment(buffer)
                 }
                 else{
-                    setErrorMessage('Cannot retrieve Order Record(s). Please try again.')
+                    setErrorMessage('Cannot retrieve Refund Record(s). Please try again.')
                 }
                 setErrorMessage('')
                 csvLink.current.link.click()
             })
             .catch((err) => {
-                setErrorMessage('Unable to get Order Record(s).')
+                setErrorMessage('Unable to get Refund Record(s).')
+                console.log(err)
+            })
+        }
+        else if('refundRecords'){
+            await db.collection(userInfo.location).doc('RefundHistory').collection(date)
+            .get()
+            .then((querySnapshot) => {
+                var excelData = []
+                var temp = {}
+                var total = {}
+                var index = 1
+                if(querySnapshot.docs !== undefined && querySnapshot.docs !== null){
+                    querySnapshot.docs.forEach((item) => {
+                        temp['#'] = index
+                        var dateArr = item.data().date.split('-')
+                        temp['Date'] =  dateArr[2] + '.' + dateArr[1] + '.' + dateArr[0]
+                        temp['Order #'] = item.data().orderNum
+                        var buffer = {}
+                        Object.keys(item.data().refundAmount).forEach((each) => {
+                            console.log(item.data().refundAmount[each])
+                            buffer[each] = item.data().refundAmount[each]
+                            temp[each] = item.data().refundAmount[each]
+                            total[each] = item.data().refundAmount[each]
+                        })
+                        excelData.push(temp)
+                        temp = {} 
+                        index++
+                    })
+                    temp['#'] = 'TOTAL'
+                    Object.keys(total).forEach((each) => {
+                        temp[each] = total[each]
+                    })
+                    excelData.push(temp)
+                    setData(excelData)
+                }
+                else{
+                    setErrorMessage('Cannot retrieve Restock History. Please try again.')
+                }
+                setErrorMessage('')
+                csvLink.current.link.click()
+            })
+            .catch((err) => {
+                setErrorMessage('Unable to get Restock History.')
                 console.log(err)
             })
         }
