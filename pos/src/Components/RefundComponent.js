@@ -109,7 +109,6 @@ export default function RefundComponent() {
             .get()
             .then((querySnapshot) => {
                 if(querySnapshot.data() !== undefined && querySnapshot.data() !== null && querySnapshot.data().status === 'complete'){
-                    console.log(querySnapshot.data())
                     setOrder(querySnapshot.data())
                     setErrorMessage('')
                 }
@@ -157,8 +156,6 @@ export default function RefundComponent() {
                     newSummary[item] -= Math.round(((refundAmount[item]) + Number.EPSILON) * 100) / 100
                     totalRefund += Number(refundAmount[item])
                 })
-                console.log(newSummary['revenue'])
-                console.log(totalRefund)
                 newSummary.revenue = Number(newSummary.revenue) - totalRefund
                 db.collection(userInfo.location).doc('SalesSummary').collection(year).doc(month).update(newSummary)
                 var refundObj = {}
@@ -219,7 +216,7 @@ export default function RefundComponent() {
                 setSelectedItem('')
                 setLostCost(0)
                 setLostQuantity(0)
-                setTotalLostCost(totalLostCost + lostCost)
+                setTotalLostCost(totalLostCost + lostCost*lostQuantity)
             }
             else if(item.code === selectedItem && item.quantity < lostQuantity){
                 setErrorMessage('Please provide a valid quantity and try again.')
@@ -270,7 +267,6 @@ export default function RefundComponent() {
         setTotalLostCost(0)
     }
     if(isComplete){
-        console.log(refundAmount)
         return (
             <div style={{position: 'absolute', width: '80vw', paddingTop: '2%', paddingBottom: '2%', paddingRight: '2%'}}>
                 <h1 style={{padding: '3%', fontWeight: 'bolder'}}>REFUND</h1>

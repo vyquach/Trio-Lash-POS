@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react'
+import React, {useState, useRef, useEffect} from 'react'
 import { makeStyles, TextField, MenuItem, Button } from '@material-ui/core'
 import { Label, Alert, Input, Row, Col } from 'reactstrap'
 import MaterialTable from 'material-table'
@@ -36,11 +36,11 @@ export default function SearchComponent() {
         {title: 'Commission', field: 'commission'},
         {title: 'Status', field: 'status'}
     ]
-    const refundColumns = [
+    const [refundColumns, setRefundColumn] = useState([
         {title: 'Order #', field: 'orderNum'},
         {title: 'Date', field: 'date'},
         {title: 'Refund Amount', field: 'refundAmount'}
-    ]
+    ])
     const restockColumns = [
         {title: 'Date', field: 'date'},
         {title: 'Code', field: 'code'},
@@ -54,6 +54,9 @@ export default function SearchComponent() {
         {title: 'Date', field: 'date'},
         {title: 'Total Cost', field: 'totalCost'}
     ]
+    useEffect(() => {
+        getPaymentMethodList()
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
     const useStyles = makeStyles((theme) =>({
         root: {
             '& .MuiTextField-root': {
@@ -110,8 +113,26 @@ export default function SearchComponent() {
         setYear(temp[0])
         setDate(date)
     }
+    const getPaymentMethodList = () => {
+        setIsComplete(false)
+        db.collection('Configuration').doc('Configuration')
+        .get()
+        .then((querySnapshot) => {
+            var temp = querySnapshot.data().paymentMethod
+            temp.forEach((item) => {
+                var newColumn = {}
+                newColumn.title = item
+                newColumn.field = item
+                refundColumns.push(newColumn)
+            })
+        })
+        setIsComplete(true)
+    }
     const handleChangeOption = (event) => {
         setOption(event.target.value)
+        if(event.target.value === 'refundRecords'){
+
+        }
     }
     const handleSubmit = () => {
         if(date === null || date === undefined || date.length === 0 || option === null || option === undefined || option.length === 0){
@@ -148,8 +169,23 @@ export default function SearchComponent() {
             .then((querySnapshot) => {
                 if(querySnapshot.docs !== undefined && querySnapshot.docs !== null){
                     var temp = []
+                    var totalAmount = 0
                     querySnapshot.docs.forEach((item) => {
-                        temp.push(item.data())
+                        var column = {}
+                        var obj = item.data()
+                        Object.keys(obj).forEach((each) => {
+                            if(each !== 'refundAmount'){
+                                column[each] = obj[each]
+                            }
+                            else{
+                                Object.keys(obj[each]).forEach((paymentMethod) => {
+                                    column[paymentMethod] = obj[each][paymentMethod]
+                                    totalAmount += Number(obj[each][paymentMethod])
+                                })
+                            }
+                        })
+                        column['refundAmount'] = totalAmount
+                        temp.push(column)
                     })
                     setRefundList(temp)
                     setErrorMessage('')
@@ -213,7 +249,7 @@ export default function SearchComponent() {
                 console.log(err)
             })
         }
-        setDate('')
+        
     }
     const getExcelData = async () => {
         if(date === null || date === undefined || date.length === 0 || option === null || option === undefined || option.length === 0){

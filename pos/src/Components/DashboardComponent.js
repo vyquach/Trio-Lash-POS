@@ -147,7 +147,6 @@ export default function DashboardComponent() {
     }
 
     if(isComplete){
-        console.log(monthlySummary)
         return (
             <div>
             <Row>
@@ -199,7 +198,8 @@ export default function DashboardComponent() {
                             <h2 style={{fontWeight: 'bolder', color: 'white'}}>REVENUE SOURCE(S)</h2><br/>
                             {Object.keys(monthlySummary).map((key) => {
                                 if(key !== 'commission' && key !== 'revenue'){
-                                    return <span key={key} style={{fontWeight: 'bolder', color: 'white', fontSize: '20px'}}><span style={{float: 'left'}}>{key}</span><span style={{float: 'right'}}>${monthlySummary[key].toFixed(2)}</span><br/><br/></span>
+                                    if(key !== 'discount')
+                                        return <span key={key} style={{fontWeight: 'bolder', color: 'white', fontSize: '20px'}}><span style={{float: 'left'}}>{key}</span><span style={{float: 'right'}}>${monthlySummary[key].toFixed(2)}</span><br/><br/></span>
                                 }
                                 return true
                             })}
